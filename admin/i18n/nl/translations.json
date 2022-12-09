@@ -1,0 +1,21 @@
+{
+    "e2-openwebif adapter settings": "Adapterinstellingen voor e2-openwebif",
+    "Device IP": "Apparaat IP",
+    "User": "Gebruiker",
+    "Port": "Apparaat poort",
+    "Use HTTPS": "HTTPS gebruiken?",
+    "Password": "Wachtwoord",
+    "Interval": "Interval in seconden",
+    "3 Seconds": "3 seconden",
+    "4 Seconds": "4 seconden",
+    "5 Seconds": "5 seconden",
+    "6 Seconds": "6 seconden",
+    "7 Seconds": "7 seconden",
+    "8 Seconds": "8 seconden",
+    "9 Seconds": "9 seconden",
+    "10 Seconds": "10 seconden",
+    "SSH connection": "SSH-verbinding voor deep standby. AANDACHT! Bestanden moeten mogelijk handmatig worden verwijderd.",
+    "Your IP": "Jouw IP",
+    "source": "Selecteer een eenvoudige API-bron",
+    "MAC": "MAC-adres voor WOL (formaat xx:xx:xx:xx:xx)"
+}

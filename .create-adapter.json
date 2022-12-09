@@ -1,0 +1,50 @@
+{
+    "cli": true,
+    "target": "directory",
+    "adapterName": "e2-openwebif",
+    "title": "Enigma2",
+    "description": "Remote control OpenWebIf",
+    "keywords": [
+        "e2",
+        "openwebif",
+        "webif",
+        "enigma2",
+        "remote",
+        "control",
+        "vupuls",
+        "gigablue",
+        "dreambox"
+    ],
+    "expert": "yes",
+    "features": [
+        "adapter"
+    ],
+    "adminFeatures": [],
+    "type": "multimedia",
+    "startMode": "daemon",
+    "connectionType": "local",
+    "dataSource": "poll",
+    "connectionIndicator": "yes",
+    "language": "JavaScript",
+    "nodeVersion": "16",
+    "adminUi": "json",
+    "tools": [
+        "ESLint",
+        "type checking"
+    ],
+    "releaseScript": "yes",
+    "devServer": "yes",
+    "devServerPort": 8081,
+    "indentation": "Space (4)",
+    "quotes": "double",
+    "es6class": "yes",
+    "authorName": "Lucky-ESA",
+    "authorGithub": "Lucky-ESA",
+    "authorEmail": "github@luckyskills.de",
+    "gitRemoteProtocol": "SSH",
+    "gitCommit": "no",
+    "defaultBranch": "master",
+    "license": "MIT License",
+    "dependabot": "yes",
+    "creatorVersion": "2.3.0"
+}

@@ -1,0 +1,79 @@
+{
+    "i18n": true,
+    "type": "panel",
+    "items": {
+        "ip": {
+            "type": "text",
+            "label": "Device IP",
+            "newLine": true
+        },
+        "port": {
+            "type": "number",
+            "label": "Port",
+            "newLine": true
+        },
+        "https": {
+          "type": "checkbox",
+          "newLine": true,
+          "sm": 3,
+          "label": "Use HTTPS"
+        },
+        "user": {
+            "type": "text",
+            "label": "User",
+            "newLine": true
+        },
+        "password": {
+            "type": "password",
+            "newLine": true,
+            "repeat": false,
+            "visible": true,
+            "sm": 3,
+            "label": "Password"
+        },
+        "interval": {
+            "type": "select",
+            "newLine": true,
+            "sm": 3,
+            "label": "Interval",
+            "options": [
+                {"label": "3 Seconds", "value": 3},
+                {"label": "4 Seconds", "value": 4},
+                {"label": "5 Seconds", "value": 5},
+                {"label": "6 Seconds", "value": 6},
+                {"label": "7 Seconds", "value": 7},
+                {"label": "8 Seconds", "value": 8},
+                {"label": "9 Seconds", "value": 9},
+                {"label": "10 Seconds", "value": 10}
+            ]
+        },
+        "ssh": {
+          "type": "checkbox",
+          "newLine": true,
+          "sm": 12,
+          "label": "SSH connection"
+        },
+        "your_ip": {
+          "type": "ip",
+          "newLine": true,
+          "onlyIp4": true,
+          "sm": 3,
+          "label": "Your IP"
+        },
+        "simple_api": {
+          "newLine": true,
+          "type": "instance",
+          "label": "source",
+          "sm": 12,
+          "md": 6,
+          "lg": 3,
+          "adapter": "simple-api"
+        },
+        "mac": {
+            "type": "text",
+            "label": "MAC",
+            "newLine": true,
+            "lg": 3
+        }
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "e2-openwebif adapter settings": "Impostazioni dell'adattatore per e2-openwebif",
+    "Device IP": "IP del dispositivo",
+    "User": "Utente",
+    "Port": "Porta del dispositivo",
+    "Use HTTPS": "Utilizzare HTTPS?",
+    "Password": "Parola d'ordine",
+    "Interval": "Intervallo in secondi",
+    "3 Seconds": "3 secondi",
+    "4 Seconds": "4 secondi",
+    "5 Seconds": "5 secondi",
+    "6 Seconds": "6 secondi",
+    "7 Seconds": "7 secondi",
+    "8 Seconds": "8 secondi",
+    "9 Seconds": "9 secondi",
+    "10 Seconds": "10 secondi",
+    "SSH connection": "Connessione SSH per deep standby. ATTENZIONE! I file potrebbero dover essere eliminati manualmente.",
+    "Your IP": "Il tuo IP",
+    "source": "Seleziona la sorgente API semplice",
+    "MAC": "Indirizzo MAC per WOL (formato xx:xx:xx:xx:xx)"
+}

@@ -1,0 +1,131 @@
+{
+    "common": {
+        "name": "e2-openwebif",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "zh-cn": "首次出版",
+                "uk": "початковий випуск"
+            }
+        },
+        "title": "OpenWebIf",
+        "titleLang": {
+            "en": "OpenWebIf",
+            "de": "OpenWebif",
+            "ru": "ОткрытьWebIf",
+            "pt": "OpenWebIf",
+            "nl": "Open WebI",
+            "fr": "OpenWebIf",
+            "it": "OpenWebIf",
+            "es": "OpenWebSi",
+            "pl": "OpenWeb",
+            "uk": "Веб-сайт",
+            "zh-cn": "开放万国宫"
+        },
+        "desc": {
+            "en": "Remote control OpenWebIf",
+            "de": "Fernbedienung OpenWebIf",
+            "ru": "Дистанционное управление OpenWebIf",
+            "pt": "Controle remoto OpenWebIf",
+            "nl": "Verwijder de controle",
+            "fr": "Télécommande OpenWebIf",
+            "it": "Controllo remoto OpenWebIf",
+            "es": "Control remoto OpenWebSi",
+            "pl": "Oficjalna strona OpenWeb",
+            "uk": "Пульт дистанційного керування OpenWebIf",
+            "zh-cn": "遥感"
+        },
+        "authors": [
+            "Lucky-ESA <github@luckyskills.de>"
+        ],
+        "keywords": [
+            "e2",
+            "openwebif",
+            "webif",
+            "enigma2",
+            "remote",
+            "control",
+            "vupuls",
+            "gigablue",
+            "dreambox"
+        ],
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "main": "main.js",
+        "icon": "e2-openwebif.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/Lucky-ESA/ioBroker.e2-openwebif/master/admin/e2-openwebif.png",
+        "readme": "https://github.com/Lucky-ESA/ioBroker.e2-openwebif/blob/master/README.md",
+        "loglevel": "info",
+        "mode": "daemon",
+        "type": "multimedia",
+        "compact": true,
+        "connectionType": "local",
+        "dataSource": "poll",
+        "adminUI": {
+            "config": "json"
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=3.3.22"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=5.1.13"
+            }
+        ]
+    },
+    "encryptedNative": [
+        "password"
+    ],
+    "protectedNative": [
+        "password"
+    ],
+    "native": {
+        "ip": "127.0.0.1",
+        "port": "80",
+        "https": false,
+        "user": "root",
+        "password": "",
+        "interval": 3,
+        "ssh": false,
+        "your_ip": "",
+        "simple_api": "",
+        "mac": "",
+        "adaptername": null
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Device or service connected",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}

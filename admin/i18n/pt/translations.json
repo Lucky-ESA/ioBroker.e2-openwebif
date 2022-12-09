@@ -1,0 +1,21 @@
+{
+    "e2-openwebif adapter settings": "Configurações do adaptador para e2-openwebif",
+    "Device IP": "IP do dispositivo",
+    "User": "Do utilizador",
+    "Port": "Porta do dispositivo",
+    "Use HTTPS": "Usar HTTPS?",
+    "Password": "Senha",
+    "Interval": "Intervalo em segundos",
+    "3 Seconds": "3 segundos",
+    "4 Seconds": "4 segundos",
+    "5 Seconds": "5 segundos",
+    "6 Seconds": "6 segundos",
+    "7 Seconds": "7 segundos",
+    "8 Seconds": "8 segundos",
+    "9 Seconds": "9 segundos",
+    "10 Seconds": "10 segundos",
+    "SSH connection": "Conexão SSH para espera profunda. ATENÇÃO! Os arquivos talvez precisem ser excluídos manualmente.",
+    "Your IP": "Seu ip",
+    "source": "Selecione a fonte da API simples",
+    "MAC": "Endereço MAC para WOL (formato xx:xx:xx:xx:xx)"
+}
