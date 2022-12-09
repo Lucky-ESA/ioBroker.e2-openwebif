@@ -71,7 +71,6 @@ class E2Openwebif extends utils.Adapter {
         }
         if (this.config.port == "") {
             this.log.warn("Please enter an Port. Set port default 80");
-            // @ts-ignore
             this.config.port = 80;
         }
         const data = {};
@@ -136,8 +135,8 @@ class E2Openwebif extends utils.Adapter {
             } else {
                 this.log.info(`Adaptername is ${this.config.adaptername}.`);
             }
-            //this.log.info(`Create DeviceInfos`);
-            //await this.createDeviceInfo(deviceInfo.boxtype, deviceInfo);
+            this.log.info(`Create DeviceInfos`);
+            await this.createDeviceInfo(deviceInfo.boxtype, deviceInfo);
             this.log.info(`Create Remote Folder`);
             await this.createRemote(deviceInfo.boxtype);
             const statusInfo = await this.getRequest(cs.API.getcurrent);
@@ -146,7 +145,7 @@ class E2Openwebif extends utils.Adapter {
                 return;
             }
             this.log.info(`Create StatusInfos`);
-            //await this.createStatusInfo(this.config.adaptername, statusInfo);
+            await this.createStatusInfo(this.config.adaptername, statusInfo);
             const bouquets = await this.getRequest(cs.API.bouquets);
             if (!bouquets || !bouquets["bouquets"]) {
                 this.log.warn(`Cannot find Bouquets from ${this.config.ip} device`);
@@ -217,12 +216,12 @@ class E2Openwebif extends utils.Adapter {
         this.updateInterval = null;
         if (val) {
             this.offlineInterval = setInterval(async () => {
-                //this.log.info(`Check device standby`);
+                //this.log.debug(`Check device standby`);
                 this.updateDevice();
             }, times * 1000);
         } else {
             this.updateInterval = setInterval(async () => {
-                //this.log.info(`Check device deepstandby`);
+                //this.log.debug(`Check device deepstandby`);
                 if (this.isOnline === 2) {
                     this.checkdeepstandby();
                 } else {
@@ -280,7 +279,7 @@ class E2Openwebif extends utils.Adapter {
         const powerstate = await this.getRequest(cs.API.powerstate);
         //this.log.debug("powerstate: " + JSON.stringify(powerstate));
         if (!powerstate) {
-            //this.log.warn(`Device is offline`);
+            //this.log.debug(`Device is offline`);
             this.isOnline = 2;
             this.checkDevice();
             return;
@@ -345,7 +344,7 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async getRequest(path) {
-        //this.log.info("Request: " + path);
+        //this.log.debug("Request: " + path);
         return await this.axiosInstance(path)
             .then((response) => {
                 //this.log.debug(JSON.stringify(response.data));
@@ -382,7 +381,6 @@ class E2Openwebif extends utils.Adapter {
         const res = await this.getRequest(path);
         this.log.info("Path2" + path);
         this.log.info("sendCommand2: " + JSON.stringify(res));
-        this.log.info("WAS");
     }
 
     /**
@@ -723,7 +721,7 @@ class E2Openwebif extends utils.Adapter {
         if (state && state.val) {
             const getservices = await this.getRequest(`${cs.SET.getservices}${encodeurl(state.val)}`);
             if (getservices && getservices.services) {
-                //this.log.info("getservices: " + JSON.stringify(getservices));
+                //this.log.debug("getservices: " + JSON.stringify(getservices));
                 const new_states = {};
                 const channel = await this.getObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.${dp}`);
                 for (const element of getservices.services) {
@@ -783,7 +781,6 @@ class E2Openwebif extends utils.Adapter {
             username: this.config.user,
             password: this.config.password
         };
-        //const boxfile = `${this.adapterDir}/lib/iobroker.sh`;
         const boxfile = "/home/pi/ioBroker.e2-openwebif/lib/iobroker.sh";
         let data = "";
         if (fs.existsSync(boxfile)) {
