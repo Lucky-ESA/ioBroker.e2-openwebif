@@ -69,7 +69,7 @@ class E2Openwebif extends utils.Adapter {
             this.log.warn("Please enter an IP.");
             return;
         }
-        if (this.config.port == "") {
+        if (this.config.port === 0) {
             this.log.warn("Please enter an Port. Set port default 80");
             this.config.port = 80;
         }
@@ -153,9 +153,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log.info(`Create Bouquets and EPG`);
                 await this.createBouquetsAndEPG(this.config.adaptername, bouquets);
             }
-            if (this.config.ssh && this.isOnline === 1) {
-                await this.connect_ssh();
-            }
+            await this.connect_ssh();
         }
         this.subscribeStates(`${this.config.adaptername}.remote.*`);
         this.log.info(`Start Interval with ${this.config.interval} seconds...`);
@@ -174,6 +172,12 @@ class E2Openwebif extends utils.Adapter {
                 val: this.isOnline,
                 ack: true
             });
+            if (this.isOnline === 0) {
+                this.setState(`${this.config.adaptername}.remote.STATUS_FROM_DEVICE`, {
+                    val: this.isOnline,
+                    ack: true
+                });
+            }
         }
         if (this.isOnline === 1) {
             if (!this.offlineInterval) {
@@ -216,12 +220,12 @@ class E2Openwebif extends utils.Adapter {
         this.updateInterval = null;
         if (val) {
             this.offlineInterval = setInterval(async () => {
-                //this.log.debug(`Check device standby`);
+                this.log.debug(`Check device standby`);
                 this.updateDevice();
             }, times * 1000);
         } else {
             this.updateInterval = setInterval(async () => {
-                //this.log.debug(`Check device deepstandby`);
+                this.log.debug(`Check device deepstandby`);
                 if (this.isOnline === 2) {
                     this.checkdeepstandby();
                 } else {
@@ -274,18 +278,19 @@ class E2Openwebif extends utils.Adapter {
 
     async updateDevice() {
         if (this.load) {
+            this.log.debug("in Process: " + this.loadname);
             return;
         }
         const powerstate = await this.getRequest(cs.API.powerstate);
-        //this.log.debug("powerstate: " + JSON.stringify(powerstate));
+        this.log.debug("powerstate: " + JSON.stringify(powerstate));
         if (!powerstate) {
-            //this.log.debug(`Device is offline`);
+            this.log.debug(`Device is offline`);
             this.isOnline = 2;
             this.checkDevice();
             return;
         }
         if (powerstate && powerstate.instandby) {
-            this.log.warn(`Device is in standby`);
+            this.log.debug(`Device is in standby`);
             this.isOnline = 0;
             this.checkDevice();
             return;
@@ -335,7 +340,7 @@ class E2Openwebif extends utils.Adapter {
         if (tunersignal) {
             getcurrent.info = tunersignal;
         }
-        //this.log.debug("INFO: " + JSON.stringify(getcurrent.info));
+        this.log.debug("INFO: " + JSON.stringify(getcurrent.info));
         this.json2iob.parse(`${this.config.adaptername}.statusInfo`, getcurrent, {
             forceIndex: true,
             preferedArrayName: null,
@@ -344,10 +349,10 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async getRequest(path) {
-        //this.log.debug("Request: " + path);
+        this.log.debug("Request: " + path);
         return await this.axiosInstance(path)
             .then((response) => {
-                //this.log.debug(JSON.stringify(response.data));
+                this.log.debug(JSON.stringify(response.data));
                 this.isOnline = 1;
                 return response.data;
             })
@@ -355,8 +360,7 @@ class E2Openwebif extends utils.Adapter {
                 this.isOnline = 2;
                 this.log.debug("getRequest: " + error);
                 error.response && this.log.debug("Request: " + JSON.stringify(error.response.data));
-                this.load = false;
-                this.loadname = "Unknown";
+                this.inProgress(false, "Unknown");
                 return false;
             });
     }
@@ -391,8 +395,12 @@ class E2Openwebif extends utils.Adapter {
     async onStateChange(id, state) {
         if (state && !state.ack && state.val != null) {
             const command = id.split(".").pop();
+            this.log.debug(`command: ${command}`);
             if (command === "change_ip") {
                 this.changeIP(state);
+            }
+            if (command === "WOL" || (command === "setPowerStates" && state.val === 6)) {
+                this.wakeonlan(state);
             }
             if (this.isOnline === 2) {
                 this.log.info(`Receiver ${this.config.ip} is Offline. Cannot send a request!`);
@@ -432,10 +440,7 @@ class E2Openwebif extends utils.Adapter {
                     this.createRecordingEPG(state);
                     break;
                 case "sendMessage":
-                    this.sendMessageToDevice(id, state);
-                    break;
-                case "wol":
-                    this.wakeonlan(state);
+                    this.sendMessageToDevice(state);
                     break;
                 case "request":
                     this.sentRequest(state);
@@ -445,6 +450,36 @@ class E2Openwebif extends utils.Adapter {
                     break;
                 case "STATUS_FROM_DEVICE":
                     this.changeStatus(state);
+                    break;
+                case "SET_VOLUME":
+                    this.setVolumen(state);
+                    break;
+                case "setPowerStates":
+                    this.setPowerStates(state);
+                    break;
+                case "STANDBY":
+                    state.val = 5;
+                    this.setPowerStates(state);
+                    break;
+                case "WAKEUP":
+                    state.val = 4;
+                    this.setPowerStates(state);
+                    break;
+                case "REBOOT_ENIGMA":
+                    state.val = 3;
+                    this.setPowerStates(state);
+                    break;
+                case "REBOOT":
+                    state.val = 2;
+                    this.setPowerStates(state);
+                    break;
+                case "DEEP_STANDBY":
+                    state.val = 1;
+                    this.setPowerStates(state);
+                    break;
+                case "TOGGLE_STANDBY":
+                    state.val = 0;
+                    this.setPowerStates(state);
                     break;
                 default:
                     this.log.info(`received unknown command ${command}`);
@@ -456,16 +491,48 @@ class E2Openwebif extends utils.Adapter {
         }
     }
 
+    async setVolumen(state) {
+        if (state) {
+            if (state.val == 0 || (state.val > 0 && state.val < 101))  {
+                const vol = await this.getRequest(`${cs.PATH.SETVOLUME}${state.val}`);
+                this.log.debug("vol: " + JSON.stringify(vol));
+            } else {
+                this.log.info(`Cannot set Volumen: ${state.val}`);
+            }
+        } else {
+            this.log.info(`Cannot set Volumen`);
+        }
+    }
+
+    async setPowerStates(state) {
+        if (state) {
+            if (state.val == 0 || (state.val > 0 && state.val < 6))  {
+                const power = await this.getRequest(`${cs.PATH.POWER}${state.val}`);
+                this.log.debug("power: " + JSON.stringify(power));
+            } else if (state.val === 6) {
+                state.val = true;
+                this.wakeonlan(state);
+            } else {
+                this.log.info(`Cannot set Powerstate: ${state.val}`);
+            }
+        } else {
+            this.log.info(`Cannot set Powerstate`);
+        }
+    }
+
     async createRecordingEPG(state) {
+        await this.inProgress(true, "createRecordingEPG");
         if (state && state.val) {
             const eventid = await this.getStateAsync(`${this.config.adaptername}.remote.epg.channel.id`);
             const sRef = await this.getStateAsync(`${this.config.adaptername}.remote.epg.channel.sref`);
             if (!eventid || !eventid.val != null) {
                 this.log.info("Missing eventid");
+                this.inProgress(false, "Unknown");
                 return;
             }
             if (!sRef || !sRef.val != null) {
                 this.log.info("Missing sRef");
+                this.inProgress(false, "Unknown");
                 return;
             }
             const setRec = await this.getRequest(`${cs.SET.timeraddbyeventid}?sRef=${sRef.val}&eventid=${eventid.val}`);
@@ -475,13 +542,15 @@ class E2Openwebif extends utils.Adapter {
                 ack: true
             });
         }
+        this.inProgress(false, "Unknown");
     }
 
     async setRecordingInfoEPG(state) {
+        await this.inProgress(true, "setRecordingEPG");
         if (state && state.val != "") {
             this.log.debug("state.val: " + JSON.stringify(state.val));
             const rec = await this.getObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_RECORDING`);
-            //this.log.info("rec.native.epg: " + JSON.stringify(rec.native.epg));
+            this.log.debug("rec.native.epg: " + JSON.stringify(rec.native.epg));
             if (rec && rec.native && rec.native.epg && rec.native.epg[state.val]) {
                 this.json2iob.parse(`${this.config.adaptername}.remote.epg.channel`, rec.native.epg[state.val], {
                     forceIndex: true,
@@ -490,21 +559,23 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
         }
+        this.inProgress(false, "Unknown");
     }
 
     async setChannelInfoEPG(state) {
+        await this.inProgress(true, "setChannelInfoEPG");
         if (state && state.val != "") {
             const epgservice = await this.getRequest(`${cs.SET.epgservice}${state.val}`);
             if (epgservice && epgservice.events) {
                 const new_states = {};
                 let val_arr = 0;
                 const channel = await this.getObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_RECORDING`);
-                //this.log.debug("epgservice.events: " + JSON.stringify(epgservice.events));
+                this.log.debug("epgservice.events: " + JSON.stringify(epgservice.events));
                 for (const element of epgservice.events) {
                     new_states[val_arr] = element.begin + " - " + element.sname + " " + element.title;
                     ++val_arr;
                 }
-                //this.log.debug("new_states: " + JSON.stringify(new_states));
+                this.log.debug("new_states: " + JSON.stringify(new_states));
                 if (channel && channel.common && channel.common.states) {
                     delete channel.common.states;
                 }
@@ -514,14 +585,18 @@ class E2Openwebif extends utils.Adapter {
                 if (channel && channel.native && channel.native.epg) {
                     delete channel.native.epg;
                 }
-                channel.common["states"] = new_states;
-                channel.native["epg"] = epgservice.events;
+                if (channel && channel.common) {
+                    channel.common["states"] = new_states;
+                    channel.native["epg"] = epgservice.events;
+                }
                 await this.setForeignObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_RECORDING`, channel);
             }
         }
+        this.inProgress(false, "Unknown");
     }
 
     async setMovies(state) {
+        await this.inProgress(true, "setMovies");
         this.log.info(`setMovies: ${state.val}`);
         if (state && state.val != null) {
             const movielist = await this.getRequest(`${cs.SET.movielist}${state.val}`);
@@ -532,6 +607,7 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
         }
+        this.inProgress(false, "Unknown");
     }
 
     async changeStatus(state) {
@@ -584,6 +660,7 @@ class E2Openwebif extends utils.Adapter {
             this.log.info(`Receiver ${this.config.ip} is in standby!`);
             return;
         }
+        await this.inProgress(true, "sendRequest");
         if (state && state.val) {
             const resp = await this.getRequest(state.val);
             this.log.debug(JSON.stringify(resp));
@@ -592,30 +669,29 @@ class E2Openwebif extends utils.Adapter {
                 ack: true
             });
         }
+        this.inProgress(false, "Unknown");
     }
 
-    async sendMessageToDevice(id, state) {
+    async sendMessageToDevice(state) {
         if (!state.val) {
             return;
         }
-        this.load = true;
-        this.loadname = "Send Message";
+        await this.inProgress(true, "sendMessageToDevice");
         const send_message = await this.getStateAsync(`${this.config.adaptername}.remote.message.message`);
         const send_timeout = await this.getStateAsync(`${this.config.adaptername}.remote.message.timeout`);
         const send_type = await this.getStateAsync(`${this.config.adaptername}.remote.message.type`);
         if (!send_message || send_message.val == "") {
-            this.load = false;
-            this.loadname = "Unknown";
+            this.inProgress(false, "Unknown");
             this.log.info("Message is empty");
             return;
         }
-        if (send_type != null && (send_type.val < 0 && send_type.val > 3)) {
-            this.log.info("Change type to 1");
-            send_type.val = 1;
+        if (!send_type) {
+            this.log.info("Cannot find type!");
+            return;
         }
-        if (!send_timeout || send_timeout.val == 0) {
-            this.log.info("Change timeout to 10");
-            send_timeout.val = 10;
+        if (!send_timeout) {
+            this.log.info("Cannot find timeout!");
+            return;
         }
         const path = "?text=" + send_message.val + "&type=" + send_type.val + "&timeout=" + send_timeout.val;
         const return_message = await this.getRequest(`${cs.SET.message}${encodeurl(path)}`);
@@ -626,8 +702,7 @@ class E2Openwebif extends utils.Adapter {
                 this.answerMessage();
             }, (send_timeout.val + 1) * 1000);
         }
-        this.load = false;
-        this.loadname = "Unknown";
+        this.inProgress(false, "Unknown");
     }
 
     async answerMessage() {
@@ -646,8 +721,7 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async setFolder() {
-        this.load = true;
-        this.loadname = "Set Folder for Movielist";
+        await this.inProgress(true, "setFolder");
         const getlocations = await this.getRequest(`${cs.API.getlocations}`);
         if (
             getlocations &&
@@ -687,14 +761,13 @@ class E2Openwebif extends utils.Adapter {
                 await this.createDataPoint(`${this.config.adaptername}.remote.movielist.SET_FOLDER`, common, "state");
             }
         }
-        this.load = false;
-        this.loadname = "Unknown";
+        this.inProgress(false, "Unknown");
     }
 
     async setZAPAndEPG(state, val) {
         this.log.debug("state.val: " + state.val);
         const ZAPandEPG = await this.getRequest(`${cs.SET[val]}${encodeurl(state.val)}`);
-        //this.log.debug("ZAPandEPG: " + JSON.stringify(ZAPandEPG));
+        this.log.debug("ZAPandEPG: " + JSON.stringify(ZAPandEPG));
         if (val === "epgbouquet" && ZAPandEPG && ZAPandEPG.events) {
             this.setState(`${this.config.adaptername}.remote.epg.EPG_JSON`, {
                 val: JSON.stringify(ZAPandEPG),
@@ -702,7 +775,7 @@ class E2Openwebif extends utils.Adapter {
             });
             const new_states = {};
             const channel = await this.getObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_CHANNEL`);
-            //this.log.debug("ZAPandEPG: " + JSON.stringify(ZAPandEPG.events));
+            this.log.debug("ZAPandEPG event: " + JSON.stringify(ZAPandEPG.events));
             for (const element of ZAPandEPG.events) {
                 if (element && element.sname && new_states[element.sref] == null) {
                     new_states[element.sref] = element.sname;
@@ -712,7 +785,9 @@ class E2Openwebif extends utils.Adapter {
             if (channel && channel.common && channel.common.states) {
                 delete channel.common.states;
             }
-            channel.common["states"] = new_states;
+            if (channel && channel.common) {
+                channel.common["states"] = new_states;
+            }
             await this.setForeignObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_CHANNEL`, channel);
         }
     }
@@ -721,7 +796,7 @@ class E2Openwebif extends utils.Adapter {
         if (state && state.val) {
             const getservices = await this.getRequest(`${cs.SET.getservices}${encodeurl(state.val)}`);
             if (getservices && getservices.services) {
-                //this.log.debug("getservices: " + JSON.stringify(getservices));
+                this.log.debug("getservices: " + JSON.stringify(getservices));
                 const new_states = {};
                 const channel = await this.getObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.${dp}`);
                 for (const element of getservices.services) {
@@ -732,7 +807,9 @@ class E2Openwebif extends utils.Adapter {
                 if (channel && channel.common && channel.common.states) {
                     delete channel.common.states;
                 }
-                channel.common["states"] = new_states;
+                if (channel && channel.common) {
+                    channel.common["states"] = new_states;
+                }
                 await this.setForeignObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.${dp}`, channel);
             }
         } else {
@@ -781,12 +858,12 @@ class E2Openwebif extends utils.Adapter {
             username: this.config.user,
             password: this.config.password
         };
-        const boxfile = "/home/pi/ioBroker.e2-openwebif/lib/iobroker.sh";
-        let data = "";
+        const boxfile = this.adapterDir + "/lib/iobroker.sh";
+        let data;
         if (fs.existsSync(boxfile)) {
             try {
                 data = fs.readFileSync(boxfile);
-                this.log.info(`Hallo`);
+                this.log.debug(`Data: ${data}`);
             } catch (e) {
                 this.log.info(`Cannot read file "${boxfile}": ${e}`);
                 return;
@@ -796,12 +873,14 @@ class E2Openwebif extends utils.Adapter {
             return;
         }
         const ssh2 = new SSH2Promise(sshconfig2);
+        //const ssh_dp = await this.getStateAsync(`${this.config.adaptername}.SSH_CREATED`);
+        //const ssh_connection = ssh_dp && ssh_dp.val ? ssh_dp.val : false;
         await ssh2.connect().then(async () => {
             this.log.info("Connection established");
             let resp = "";
             resp = await this.commandToSSH2(ssh2, "/home/iobroker.sh");
             this.log.info(resp);
-            if (resp != "iobroker") {
+            if (!resp && resp != "iobroker" && this.config.ssh) {
                 resp = await this.commandToSSH2(ssh2, `echo '${data}' > /home/iobroker.sh`);
                 resp = await this.commandToSSH2(ssh2, "chmod 775 /home/iobroker.sh");
                 if (resp === "OK") {
@@ -814,8 +893,33 @@ class E2Openwebif extends utils.Adapter {
                 resp = await this.commandToSSH2(ssh2, "/home/iobroker.sh 1 " + get_url);
                 if (resp === "OK") {
                     this.log.info("Create files and symlinks");
+                    this.setState(`${this.config.adaptername}.SSH_CREATED`, {
+                        val: true,
+                        ack: true
+                    });
                 } else {
                     this.log.info("Error create files and symlinks: " + resp);
+                    ssh2.close();
+                    return;
+                }
+            } else if (!resp && resp == "iobroker" && !this.config.ssh) {
+                resp = await this.commandToSSH2(ssh2, "/home/iobroker.sh 2");
+                if (resp === "OK") {
+                    this.log.info("Delete files and symlinks");
+                } else {
+                    this.log.info("Error delete files and symlinks: " + resp);
+                    ssh2.close();
+                    return;
+                }
+                resp = await this.commandToSSH2(ssh2, "rm /home/iobroker.sh 2");
+                if (resp === "OK") {
+                    this.log.info("Delete /home/iobroker.sh");
+                    this.setState(`${this.config.adaptername}.SSH_CREATED`, {
+                        val: false,
+                        ack: true
+                    });
+                } else {
+                    this.log.info("Error delete /home/iobroker.sh: " + resp);
                     ssh2.close();
                     return;
                 }
@@ -836,6 +940,11 @@ class E2Openwebif extends utils.Adapter {
         } catch (e) {
             return e;
         }
+    }
+
+    async inProgress(work, workname) {
+        this.load = work;
+        this.loadname = workname;
     }
 }
 if (require.main !== module) {

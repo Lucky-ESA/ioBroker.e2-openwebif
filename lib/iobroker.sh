@@ -5,13 +5,13 @@ fi
 if [ "${1}" == "1" ]; then
 	if [ ! -f "/etc/init.d/device_off.sh" ]; then
 		echo "#!/bin/bash" > /etc/init.d/device_off.sh
-		echo "wget ${2}2" >> /etc/init.d/device_off.sh
+		echo "wget -q ${2}2" >> /etc/init.d/device_off.sh
 		echo "exit 0" >> /etc/init.d/device_off.sh
 		chmod 775 /etc/init.d/device_off.sh
 	fi
 	if [ ! -f "/etc/init.d/device_on.sh" ]; then
 		echo "#!/bin/bash" > /etc/init.d/device_on.sh
-		echo "wget ${2}1" >> /etc/init.d/device_on.sh
+		echo "wget -q ${2}1" >> /etc/init.d/device_on.sh
 		echo "exit 0" >> /etc/init.d/device_on.sh
 		chmod 775 /etc/init.d/device_on.sh
 	fi
