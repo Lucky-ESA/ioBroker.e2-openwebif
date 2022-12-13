@@ -42,4 +42,7 @@ if [ "${1}" == "2" ]; then
 		unlink /etc/rc3.d/S93device_on.sh
 	fi
 fi
+if [ "${1}" == "3" ]; then
+	echo $(wget -O- -q http://127.0.0.1/web/timerlist |grep "e2state" | grep -c ">2<")
+fi
 exit 0

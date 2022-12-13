@@ -47,7 +47,9 @@ class E2Openwebif extends utils.Adapter {
         this.createStatusInfo = helper.createStatusInfo;
         this.createBouquetsAndEPG = helper.createBouquetsAndEPG;
         this.createFolderJson = helper.createFolderJson;
+        this.createTimeerlist = helper.createTimeerlist;
         this.loadBouquets = helper.loadBouquets;
+        this.statesLoadTimer = helper.statesLoadTimer;
         this.updateInterval = null;
         this.offlineInterval = null;
         this.messageInterval = null;
@@ -94,6 +96,9 @@ class E2Openwebif extends utils.Adapter {
             method: "GET",
             baseURL: url,
             timeout: 10000,
+            responseType: "json",
+            charset: "utf-8",
+            responseEncoding: "utf-8",
             ...data,
         });
         this.isOnline  = await this.pingDevice(this.config.ip, this.config.port);
@@ -282,7 +287,7 @@ class E2Openwebif extends utils.Adapter {
             return;
         }
         const powerstate = await this.getRequest(cs.API.powerstate);
-        this.log.debug("powerstate: " + JSON.stringify(powerstate));
+        //this.log.debug("powerstate: " + JSON.stringify(powerstate));
         if (!powerstate) {
             this.log.debug(`Device is offline`);
             this.isOnline = 2;
@@ -300,59 +305,79 @@ class E2Openwebif extends utils.Adapter {
             this.log.warn(`Cannot find Status from ${this.config.ip} device`);
             return;
         }
+        this.inProgress(true, "updateDevice");
         const picon = "http://" +
-            this.config.ip +
-            ":" +
-            this.config.port +
-            "/picon/" +
-            getcurrent.now.sref.replace(/:/g, "_").slice(0, -1) +
-            ".png";
-        this.setState(`${this.config.adaptername}.statusInfo.next.picon`, {
+            this.config.ip
+            + ":" +
+            this.config.port
+            + "/picon/" +
+            getcurrent.now.sref.replace(/:/g, "_").slice(0, -1)
+            + ".png";
+        await this.setStateAsync(`${this.config.adaptername}.statusInfo.next.picon`, {
             val: picon,
             ack: true
         });
-        this.setState(`${this.config.adaptername}.statusInfo.now.picon`, {
+        await this.setStateAsync(`${this.config.adaptername}.statusInfo.now.picon`, {
             val: picon,
             ack: true
         });
-        let remain = "";
-        if (getcurrent && getcurrent.next && getcurrent.next.remaining) {
-            remain = new Date(Date.now(getcurrent.next.remaining) - new Date().getTimezoneOffset() * 60000)
-                .toISOString()
-                .replace("T", " ")
-                .replace("Z", "");
-            this.setState(`${this.config.adaptername}.statusInfo.next.remaining_time`, {
-                val: remain,
+        if (getcurrent.next && getcurrent.next.remaining) {
+            await this.setStateAsync(`${this.config.adaptername}.statusInfo.next.remaining_time`, {
+                val: (await this.convertRemaining(getcurrent.next.remaining)).toString(),
                 ack: true
             });
         }
-        if (getcurrent && getcurrent.next && getcurrent.next.remaining) {
-            remain = new Date(Date.now(getcurrent.now.remaining) - new Date().getTimezoneOffset() * 60000)
-                .toISOString()
-                .replace("T", " ")
-                .replace("Z", "");
-            this.setState(`${this.config.adaptername}.statusInfo.now.remaining_time`, {
-                val: remain,
+        if (getcurrent.now && getcurrent.now.remaining) {
+            await this.setStateAsync(`${this.config.adaptername}.statusInfo.now.remaining_time`, {
+                val: (await this.convertRemaining(getcurrent.now.remaining)).toString(),
                 ack: true
             });
+        }
+        if (
+            getcurrent.info &&
+            getcurrent.info.txtpid &&
+            getcurrent.info.txtpid == "N/A"
+        ) {
+            getcurrent.info.txtpid = 0;
         }
         const tunersignal = await this.getRequest(cs.API.tunersignal);
-        if (tunersignal) {
-            getcurrent.info = tunersignal;
+        if (tunersignal && tunersignal.tunernumber != null) {
+            //snr_db String
+            getcurrent.tunerinfo = tunersignal;
         }
-        this.log.debug("INFO: " + JSON.stringify(getcurrent.info));
-        this.json2iob.parse(`${this.config.adaptername}.statusInfo`, getcurrent, {
+        //this.log.debug("INFO: " + JSON.stringify(getcurrent.info));
+        await this.json2iob.parse(`${this.config.adaptername}.statusInfo`, getcurrent, {
             forceIndex: true,
             preferedArrayName: null,
             channelName: null,
         });
+        this.inProgress(false, "Unknown");
+    }
+
+    async convertRemaining(sec) {
+        if (sec == 0) {
+            return "0";
+        }
+        sec = Number(sec);
+        const hours = Math.floor(sec / 3600);
+        const minutes = Math.floor((sec - (hours * 3600)) / 60);
+        const seconds = sec - (hours * 3600) - (minutes * 60);
+        if (minutes === 0 && hours === 0) {
+            return ("0" + seconds).slice(-2);
+        }
+        if (hours === 0) {
+            return ("0" + minutes).slice(-2) + ":" + ("0" + seconds).slice(-2);
+        }
+        return ("0" + hours).slice(-2) + ":" +
+            ("0" + minutes).slice(-2) + ":" +
+            ("0" + seconds).slice(-2);
     }
 
     async getRequest(path) {
-        this.log.debug("Request: " + path);
+        //this.log.debug("Request: " + path);
         return await this.axiosInstance(path)
             .then((response) => {
-                this.log.debug(JSON.stringify(response.data));
+                //this.log.debug(JSON.stringify(response.data));
                 this.isOnline = 1;
                 return response.data;
             })
@@ -409,8 +434,7 @@ class E2Openwebif extends utils.Adapter {
             if (this.isOnline === 0) {
                 this.log.info(`Receiver ${this.config.ip} is in standby!`);
             }
-            if (cs.KEYIDS[command] && state.val) {
-                this.log.info("WER2: " + state.val);
+            if (cs.KEYIDS[command] != null && state.val) {
                 this.sendCommand(`${cs.PATH["COMMAND"]}${cs.KEYIDS[command]}`);
                 return;
             }
@@ -449,6 +473,7 @@ class E2Openwebif extends utils.Adapter {
                     this.sentRequest(state);
                     break;
                 case "STATUS_FROM_DEVICE":
+                    this.isOnline = Number(state.val);
                     this.changeStatus(state);
                     break;
                 case "SET_VOLUME":
@@ -481,14 +506,98 @@ class E2Openwebif extends utils.Adapter {
                     state.val = 0;
                     this.setPowerStates(state);
                     break;
+                case "RELOAD_BOUQUETS":
+                    this.reloadBouquest();
+                    break;
+                case "DELETE_EXPIRED_TIMERS":
+                case "DELETE_SELECT_TIMERS":
+                case "LOAD_TIMERLIST":
+                case "SET_TIMER":
+                    this.commandTimer(command, state);
+                    break;
                 default:
-                    this.log.info(`received unknown command ${command}`);
+                    this.log.debug(`received unknown command ${command}`);
             }
-            this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-        } else {
-            // The state was deleted
-            this.log.info(`state ${id} deleted`);
         }
+    }
+
+    async commandTimer(command, state) {
+        await this.inProgress(true, "reloadBouquest");
+        if (command === "DELETE_EXPIRED_TIMERS") {
+            const cleanup = await this.getRequest(cs.SET.timercleanup);
+            if (cleanup && cleanup.result) {
+                this.log.info(`Cleanup timerlist`);
+                this.delObject(`${this.config.adaptername}.remote.timerlist.timer`, { recursive: true });
+            } else {
+                this.log.info(`Cannot cleanup timerlist`);
+            }
+        } else if (command === "LOAD_TIMERLIST") {
+            const timer = await this.getRequest(cs.SET.timerlist);
+            if (timer && timer.timers != null && Object.keys(timer.timers).length > 0) {
+                this.log.debug(`Create Select Timerlist`);
+                const new_states = {};
+                for (const element of timer.timers) {
+                    new_states[`${element.serviceref}.${element.begin}.${element.end}.${element.eit}`] = element.name;
+                }
+                this.log.debug("new_states: " + JSON.stringify(new_states));
+                await this.statesLoadTimer(this.config.adaptername, new_states);
+            } else {
+                this.log.info(`Cannot Create Select Timerlist`);
+            }
+        } else if (command === "DELETE_SELECT_TIMERS") {
+            const set_timer = await this.getStateAsync(`${this.config.adaptername}.remote.timerlist.SET_TIMER`);
+            if (set_timer && set_timer.val != null) {
+                const arr = state.val.split(".");
+                const del = await this.getRequest(`
+                    ${cs.PATH.TIMERDELETE}
+                    ${arr[0]}
+                    &begin=${arr[1]}
+                    &end=${arr[2]}
+                `);
+                if (del && del.result) {
+                    this.log.info(`Delete ${set_timer.val}`);
+                    this.delObject(`${this.config.adaptername}.remote.timerlist.timer`, { recursive: true });
+                } else {
+                    this.log.info(`Cannot delete ${set_timer.val}`);
+                }
+            } else {
+                this.log.info(`Timerlist is empty`);
+            }
+        } else if (command === "SET_TIMER") {
+            const arr = state.val.split(".");
+            let timer_json = {};
+            const timer = await this.getRequest(cs.SET.timerlist);
+            if (timer && timer.timers != null && Object.keys(timer.timers).length > 0) {
+                for (const element of timer.timers) {
+                    if (element.eit == arr[3]) {
+                        timer_json = element;
+                    }
+                }
+                if (timer_json && timer_json.eit) {
+                    await this.json2iob.parse(`${this.config.adaptername}.remote.timerlist.timer`, timer_json, {
+                        forceIndex: true,
+                        preferedArrayName: null,
+                        channelName: null,
+                    });
+                }
+                this.log.debug("timer_json: " + JSON.stringify(timer_json));
+            } else {
+                this.log.info(`Cannot read Timerlist`);
+            }
+        }
+        this.inProgress(false, "Unknown");
+    }
+
+    async reloadBouquest() {
+        await this.inProgress(true, "reloadBouquest");
+        const bouquets = await this.getRequest(cs.API.bouquets);
+        if (!bouquets || !bouquets["bouquets"]) {
+            this.log.warn(`Cannot find Bouquets from ${this.config.ip} device`);
+        } else {
+            this.log.info(`Create Bouquets and EPG`);
+            await this.loadBouquets(this.config.adaptername, bouquets);
+        }
+        this.inProgress(false, "Unknown");
     }
 
     async setVolumen(state) {
@@ -550,8 +659,8 @@ class E2Openwebif extends utils.Adapter {
         if (state && state.val != "") {
             this.log.debug("state.val: " + JSON.stringify(state.val));
             const rec = await this.getObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_RECORDING`);
-            this.log.debug("rec.native.epg: " + JSON.stringify(rec.native.epg));
             if (rec && rec.native && rec.native.epg && rec.native.epg[state.val]) {
+                this.log.debug("rec.native.epg: " + JSON.stringify(rec.native.epg));
                 this.json2iob.parse(`${this.config.adaptername}.remote.epg.channel`, rec.native.epg[state.val], {
                     forceIndex: true,
                     preferedArrayName: null,
@@ -570,6 +679,9 @@ class E2Openwebif extends utils.Adapter {
                 const new_states = {};
                 let val_arr = 0;
                 const channel = await this.getObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_RECORDING`);
+                if (!channel) {
+                    return;
+                }
                 this.log.debug("epgservice.events: " + JSON.stringify(epgservice.events));
                 for (const element of epgservice.events) {
                     new_states[val_arr] = element.begin + " - " + element.sname + " " + element.title;
@@ -586,10 +698,10 @@ class E2Openwebif extends utils.Adapter {
                     delete channel.native.epg;
                 }
                 if (channel && channel.common) {
-                    channel.common["states"] = new_states;
-                    channel.native["epg"] = epgservice.events;
+                    channel.common.states = new_states;
+                    channel.native.epg = epgservice.events;
+                    await this.setForeignObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_RECORDING`, channel);
                 }
-                await this.setForeignObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.epg.SET_EPG_RECORDING`, channel);
             }
         }
         this.inProgress(false, "Unknown");
@@ -597,7 +709,7 @@ class E2Openwebif extends utils.Adapter {
 
     async setMovies(state) {
         await this.inProgress(true, "setMovies");
-        this.log.info(`setMovies: ${state.val}`);
+        this.log.debug(`setMovies: ${state.val}`);
         if (state && state.val != null) {
             const movielist = await this.getRequest(`${cs.SET.movielist}${state.val}`);
             if (movielist && movielist.movies) {
@@ -700,7 +812,7 @@ class E2Openwebif extends utils.Adapter {
             await this.getRequest(`${cs.PATH.COMMAND}108`);
             this.messageInterval = setInterval(async () => {
                 this.answerMessage();
-            }, (send_timeout.val + 1) * 1000);
+            }, (Number(send_timeout.val) + 1) * 1000);
         }
         this.inProgress(false, "Unknown");
     }
@@ -708,7 +820,7 @@ class E2Openwebif extends utils.Adapter {
     async answerMessage() {
         this.messageInterval && clearInterval(this.messageInterval);
         const answer_message = await this.getRequest(`${cs.PATH.MESSAGEANSWER}`);
-        this.log.info("answer_message: " + JSON.stringify(answer_message));
+        this.log.debug("answer_message: " + JSON.stringify(answer_message));
         if (answer_message && answer_message.result != null) {
             if (!answer_message.result) {
                 this.sendCommand(`${cs.PATH["COMMAND"]}${cs.KEYIDS["KEY_EXIT"]}`);
