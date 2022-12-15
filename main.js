@@ -50,6 +50,8 @@ class E2Openwebif extends utils.Adapter {
         this.createTimeerlist = helper.createTimeerlist;
         this.loadBouquets = helper.loadBouquets;
         this.statesLoadTimer = helper.statesLoadTimer;
+        this.statesSetFolder = helper.statesSetFolder;
+        this.createTimerFolder = helper.createTimerFolder;
         this.updateInterval = null;
         this.offlineInterval = null;
         this.messageInterval = null;
@@ -515,6 +517,11 @@ class E2Openwebif extends utils.Adapter {
                 case "SET_TIMER":
                     this.commandTimer(command, state);
                     break;
+                case "answer":
+                case "message":
+                case "timeout":
+                case "type":
+                    break;
                 default:
                     this.log.debug(`received unknown command ${command}`);
             }
@@ -527,7 +534,8 @@ class E2Openwebif extends utils.Adapter {
             const cleanup = await this.getRequest(cs.SET.timercleanup);
             if (cleanup && cleanup.result) {
                 this.log.info(`Cleanup timerlist`);
-                this.delObject(`${this.config.adaptername}.remote.timerlist.timer`, { recursive: true });
+                await this.delObjectAsync(`${this.config.adaptername}.remote.timerlist.timer`, { recursive: true });
+                await this.createTimerFolder(this.config.adaptername);
             } else {
                 this.log.info(`Cannot cleanup timerlist`);
             }
@@ -547,16 +555,19 @@ class E2Openwebif extends utils.Adapter {
         } else if (command === "DELETE_SELECT_TIMERS") {
             const set_timer = await this.getStateAsync(`${this.config.adaptername}.remote.timerlist.SET_TIMER`);
             if (set_timer && set_timer.val != null) {
-                const arr = state.val.split(".");
-                const del = await this.getRequest(`
-                    ${cs.PATH.TIMERDELETE}
-                    ${arr[0]}
-                    &begin=${arr[1]}
-                    &end=${arr[2]}
-                `);
+                this.log.debug(`Split ${set_timer.val}`);
+                const arr = (set_timer.val).toString().split(".");
+                let del = null;
+                this.log.debug(`Count ${Object.keys(arr).length}`);
+                if (arr != null && Object.keys(arr).length == 4) {
+                    del = await this.getRequest(`${cs.PATH.TIMERDELETE}${arr[0]}&begin=${arr[1]}&end=${arr[2]}`);
+                }
+                this.log.debug("new_states: " + JSON.stringify(del));
+                this.log.debug(`${cs.PATH.TIMERDELETE}${arr[0]}&begin=${arr[1]}&end=${arr[2]}`);
                 if (del && del.result) {
                     this.log.info(`Delete ${set_timer.val}`);
-                    this.delObject(`${this.config.adaptername}.remote.timerlist.timer`, { recursive: true });
+                    await this.delObjectAsync(`${this.config.adaptername}.remote.timerlist.timer`, { recursive: true });
+                    await this.createTimerFolder(this.config.adaptername);
                 } else {
                     this.log.info(`Cannot delete ${set_timer.val}`);
                 }
@@ -848,29 +859,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.log.debug("this.folderstate: " + JSON.stringify(this.folderstates));
             if (this.folderstates) {
-                const common = {
-                    type: "string",
-                    role: "value",
-                    name: {
-                        "en": "Choose folder",
-                        "de": "Wählen Sie den Ordner",
-                        "ru": "Выберите папку",
-                        "pt": "Escolha a pasta",
-                        "nl": "Kies vouw",
-                        "fr": "Choisir le dossier",
-                        "it": "Scegli la cartella",
-                        "es": "Elija la carpeta",
-                        "pl": "Choose folder",
-                        "uk": "Виберіть папку",
-                        "zh-cn": "评 注"
-                    },
-                    desc: "Choose folder",
-                    read: true,
-                    write: true,
-                    def: "",
-                    states: this.folderstates
-                };
-                await this.createDataPoint(`${this.config.adaptername}.remote.movielist.SET_FOLDER`, common, "state");
+                await this.statesSetFolder(this.config.adaptername, this.folderstates);
             }
         }
         this.inProgress(false, "Unknown");
