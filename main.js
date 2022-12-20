@@ -36,7 +36,6 @@ class E2Openwebif extends utils.Adapter {
             ...options,
             name: "e2-openwebif",
         });
-
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
@@ -54,6 +53,7 @@ class E2Openwebif extends utils.Adapter {
         this.createTimerFolder = helper.createTimerFolder;
         this.updateInterval = null;
         this.offlineInterval = null;
+        this.recordInterval = null;
         this.messageInterval = null;
         this.isOnline = 0;
         this.isSame = 4;
@@ -190,6 +190,12 @@ class E2Openwebif extends utils.Adapter {
             if (!this.offlineInterval) {
                 this.setNewInterval(this.config.interval, true);
             }
+            if (this.recordInterval == null) {
+                this.recordInterval = setInterval(async () => {
+                    this.log.debug(`Check record device`);
+                    this.checkRecording(this.config.adaptername);
+                }, 60 * 1000);
+            }
         } else if (this.isOnline === 0) {
             this.isOnline  = await this.pingDevice(this.config.ip, this.config.port);
             const powerstate = await this.getRequest(cs.API.powerstate);
@@ -198,6 +204,8 @@ class E2Openwebif extends utils.Adapter {
                     this.isOnline = 0;
                     this.offlineInterval && clearInterval(this.offlineInterval);
                     this.offlineInterval = null;
+                    this.recordInterval && clearInterval(this.recordInterval);
+                    this.recordInterval = null;
                     this.setNewInterval(this.config.interval);
                 } else {
                     this.isOnline = 1;
@@ -209,6 +217,8 @@ class E2Openwebif extends utils.Adapter {
                 this.isOnline = 2;
                 this.offlineInterval && clearInterval(this.offlineInterval);
                 this.offlineInterval = null;
+                this.recordInterval && clearInterval(this.recordInterval);
+                this.recordInterval = null;
                 if (!this.updateInterval) {
                     this.setNewInterval(60);
                 }
@@ -335,13 +345,6 @@ class E2Openwebif extends utils.Adapter {
                 ack: true
             });
         }
-        if (
-            getcurrent.info &&
-            getcurrent.info.txtpid &&
-            getcurrent.info.txtpid == "N/A"
-        ) {
-            getcurrent.info.txtpid = 0;
-        }
         const tunersignal = await this.getRequest(cs.API.tunersignal);
         if (tunersignal && tunersignal.tunernumber != null) {
             //snr_db String
@@ -401,6 +404,7 @@ class E2Openwebif extends utils.Adapter {
             this.updateInterval && clearInterval(this.updateInterval);
             this.offlineInterval && clearInterval(this.offlineInterval);
             this.messageInterval && clearInterval(this.messageInterval);
+            this.recordInterval && clearInterval(this.recordInterval);
             callback();
         } catch (e) {
             callback();
@@ -549,6 +553,10 @@ class E2Openwebif extends utils.Adapter {
                 }
                 this.log.debug("new_states: " + JSON.stringify(new_states));
                 await this.statesLoadTimer(this.config.adaptername, new_states);
+                this.setState(`${this.config.adaptername}.remote.timerlist.JSON_TIMERLIST`, {
+                    val: JSON.stringify(timer.timers),
+                    ack: true
+                });
             } else {
                 this.log.info(`Cannot Create Select Timerlist`);
             }
@@ -568,6 +576,7 @@ class E2Openwebif extends utils.Adapter {
                     this.log.info(`Delete ${set_timer.val}`);
                     await this.delObjectAsync(`${this.config.adaptername}.remote.timerlist.timer`, { recursive: true });
                     await this.createTimerFolder(this.config.adaptername);
+                    this.commandTimer("LOAD_TIMERLIST", state);
                 } else {
                     this.log.info(`Cannot delete ${set_timer.val}`);
                 }
@@ -607,6 +616,10 @@ class E2Openwebif extends utils.Adapter {
         } else {
             this.log.info(`Create Bouquets and EPG`);
             await this.loadBouquets(this.config.adaptername, bouquets);
+            this.setState(`${this.config.adaptername}.remote.bouquets.JSON_BOUQUETS`, {
+                val: JSON.stringify(bouquets["bouquets"]),
+                ack: true
+            });
         }
         this.inProgress(false, "Unknown");
     }
@@ -645,12 +658,12 @@ class E2Openwebif extends utils.Adapter {
         if (state && state.val) {
             const eventid = await this.getStateAsync(`${this.config.adaptername}.remote.epg.channel.id`);
             const sRef = await this.getStateAsync(`${this.config.adaptername}.remote.epg.channel.sref`);
-            if (!eventid || !eventid.val != null) {
+            if (!eventid || eventid.val == null) {
                 this.log.info("Missing eventid");
                 this.inProgress(false, "Unknown");
                 return;
             }
-            if (!sRef || !sRef.val != null) {
+            if (!sRef || sRef.val == null) {
                 this.log.info("Missing sRef");
                 this.inProgress(false, "Unknown");
                 return;
@@ -912,6 +925,10 @@ class E2Openwebif extends utils.Adapter {
                     channel.common["states"] = new_states;
                 }
                 await this.setForeignObjectAsync(`${this.namespace}.${this.config.adaptername}.remote.${dp}`, channel);
+                this.setState(`${this.config.adaptername}.remote.bouquets.JSON_CHANNEL`, {
+                    val: JSON.stringify(getservices.services),
+                    ack: true
+                });
             }
         } else {
             this.log.info(`Cannot set ${state.val}`);
@@ -1046,6 +1063,63 @@ class E2Openwebif extends utils.Adapter {
     async inProgress(work, workname) {
         this.load = work;
         this.loadname = workname;
+    }
+
+    async checkRecording(box) {
+        const timer = await this.getRequest(cs.SET.timerlist);
+        let count_rec = 0;
+        let count_rec_err = 0;
+        let count_rec_open = 0;
+        let count_rec_done = 0;
+        if (timer && timer.timers != null && Object.keys(timer.timers).length > 0) {
+            for (const element of timer.timers) {
+                if (element && element.state != null) {
+                    if (element.state == 0) ++count_rec_open;
+                    else if (element.state == 1) ++count_rec_err;
+                    else if (element.state == 2) ++count_rec;
+                    else if (element.state == 3) ++count_rec_done;
+                }
+            }
+            const next_timer = timer.timers[0];
+            if (next_timer && next_timer.state != null && next_timer.state == 0) {
+                this.setState(`${box}.statusInfo.info.recording_next_start`, {
+                    val: next_timer.realbegin ? next_timer.realbegin : "-",
+                    ack: true
+                });
+                this.setState(`${box}.statusInfo.info.recording_next_end`, {
+                    val: next_timer.realend ? next_timer.realend : "-",
+                    ack: true
+                });
+                this.setState(`${box}.statusInfo.info.recording_next_channel`, {
+                    val: next_timer.servicename ? next_timer.servicename : "-",
+                    ack: true
+                });
+                const actual_date = new Date(next_timer.begin * 1000);
+                const timeISO = new Date(actual_date.getTime() - (actual_date.getTimezoneOffset() * 60000))
+                    .toISOString()
+                    .replace("T", " ")
+                    .replace(/\..+/, "");
+                this.log.info(`Starttime ${timeISO}`);
+            }
+            this.setState(`${box}.statusInfo.info.recordings_activ`, {
+                val: count_rec,
+                ack: true
+            });
+            this.setState(`${box}.statusInfo.info.recordings_open`, {
+                val: count_rec_open,
+                ack: true
+            });
+            this.setState(`${box}.statusInfo.info.recordings_done`, {
+                val: count_rec_done,
+                ack: true
+            });
+            this.setState(`${box}.statusInfo.info.recordings_error`, {
+                val: count_rec_err,
+                ack: true
+            });
+        } else {
+            this.log.info(`Cannot read Timerlist`);
+        }
     }
 }
 if (require.main !== module) {
