@@ -1,79 +1,357 @@
 {
     "i18n": true,
-    "type": "panel",
+    "type": "tabs",
     "items": {
-        "ip": {
-            "type": "text",
-            "label": "Device IP",
-            "newLine": true
+        "tab1": {
+            "type": "panel",
+            "label": "Tab Device",
+            "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij4NCiAgICA8cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0zIDE3LjI1VjIxaDMuNzVMMTcuODEgOS45NGwtMy43NS0zLjc1TDMgMTcuMjV6TTIwLjcxIDcuMDRjLjM5LS4zOS4zOS0xLjAyIDAtMS40MWwtMi4zNC0yLjM0Yy0uMzktLjM5LTEuMDItLjM5LTEuNDEgMGwtMS44MyAxLjgzIDMuNzUgMy43NSAxLjgzLTEuODN6Ii8+DQo8L3N2Zz4=",
+            "items": {
+                "devices": {
+                    "newLine": true,
+                    "sm": 12,
+                    "noDelete": false,
+                    "type": "table",
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "attr": "activ",
+                            "width": "5%",
+                            "title": "Activ",
+                            "tooltip": "Activate",
+                            "filter": false,
+                            "sort": false
+                        },
+                        {
+                            "type": "text",
+                            "attr": "ip",
+                            "width": "20%",
+                            "title": "IP",
+                            "tooltip": "Device IP",
+                            "filter": true,
+                            "sort": true
+                        },
+                        {
+                            "type": "number",
+                            "attr": "port",
+                            "width": "5%",
+                            "title": "Port",
+                            "tooltip": "Port",
+                            "filter": false,
+                            "sort": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "user",
+                            "width": "10%",
+                            "title": "User",
+                            "tooltip": "User",
+                            "filter": false,
+                            "sort": false
+                        },
+                        {
+                            "type": "password",
+                            "attr": "password",
+                            "width": "10%",
+                            "title": "PASSWORD",
+                            "tooltip": "Password",
+                            "filter": false,
+                            "sort": false
+                        },
+                        {
+                            "type": "checkbox",
+                            "attr": "https",
+                            "width": "5%",
+                            "title": "HTTPS",
+                            "tooltip": "Use HTTPS",
+                            "filter": false,
+                            "sort": false
+                        },
+                        {
+                            "type": "checkbox",
+                            "attr": "ssh",
+                            "width": "5%",
+                            "title": "SSH",
+                            "tooltip": "SSH connection",
+                            "filter": false,
+                            "sort": false
+                        },
+                        {
+                            "type": "text",
+                            "attr": "sshuser",
+                            "width": "10%",
+                            "title": "sshUser",
+                            "tooltip": "SSHUser",
+                            "filter": false,
+                            "sort": false
+                        },
+                        {
+                            "type": "password",
+                            "attr": "sshpassword",
+                            "width": "10%",
+                            "title": "SSHPASSWORD",
+                            "tooltip": "SSHPassword",
+                            "filter": false,
+                            "sort": false
+                        },
+                        {
+                            "type": "text",
+                            "attr": "mac",
+                            "width": "20%",
+                            "title": "YOUR MAC",
+                            "tooltip": "MAC",
+                            "filter": false,
+                            "sort": false
+                        }
+                    ]
+                },
+                "interval": {
+                    "type": "select",
+                    "newLine": true,
+                    "sm": 3,
+                    "label": "Interval",
+                    "options": [
+                        {"label": "3 Seconds", "value": 3},
+                        {"label": "4 Seconds", "value": 4},
+                        {"label": "5 Seconds", "value": 5},
+                        {"label": "6 Seconds", "value": 6},
+                        {"label": "7 Seconds", "value": 7},
+                        {"label": "8 Seconds", "value": 8},
+                        {"label": "9 Seconds", "value": 9},
+                        {"label": "10 Seconds", "value": 10}
+                    ]
+                },
+                "your_ip": {
+                    "type": "ip",
+                    "newLine": true,
+                    "onlyIp4": true,
+                    "sm": 3,
+                    "label": "Your IP"
+                },
+                "simple_api": {
+                    "newLine": true,
+                    "type": "instance",
+                    "label": "source",
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 3,
+                    "adapter": "simple-api"
+                },
+                "lucky": {
+                    "type": "checkbox",
+                    "newLine": true,
+                    "sm": 6,
+                    "label": "Send Lucky"
+                },
+                "errorinfo": {
+                    "type": "text",
+                    "label": "error info",
+                    "sm": 6,
+                    "newLine": true
+                }
+            }
         },
-        "port": {
-            "type": "number",
-            "label": "Port",
-            "newLine": true
-        },
-        "https": {
-          "type": "checkbox",
-          "newLine": true,
-          "sm": 3,
-          "label": "Use HTTPS"
-        },
-        "user": {
-            "type": "text",
-            "label": "User",
-            "newLine": true
-        },
-        "password": {
-            "type": "password",
-            "newLine": true,
-            "repeat": false,
-            "visible": true,
-            "sm": 3,
-            "label": "Password"
-        },
-        "interval": {
-            "type": "select",
-            "newLine": true,
-            "sm": 3,
-            "label": "Interval",
-            "options": [
-                {"label": "3 Seconds", "value": 3},
-                {"label": "4 Seconds", "value": 4},
-                {"label": "5 Seconds", "value": 5},
-                {"label": "6 Seconds", "value": 6},
-                {"label": "7 Seconds", "value": 7},
-                {"label": "8 Seconds", "value": 8},
-                {"label": "9 Seconds", "value": 9},
-                {"label": "10 Seconds", "value": 10}
-            ]
-        },
-        "ssh": {
-          "type": "checkbox",
-          "newLine": true,
-          "sm": 12,
-          "label": "SSH connection"
-        },
-        "your_ip": {
-          "type": "ip",
-          "newLine": true,
-          "onlyIp4": true,
-          "sm": 3,
-          "label": "Your IP"
-        },
-        "simple_api": {
-          "newLine": true,
-          "type": "instance",
-          "label": "source",
-          "sm": 12,
-          "md": 6,
-          "lg": 3,
-          "adapter": "simple-api"
-        },
-        "mac": {
-            "type": "text",
-            "label": "MAC",
-            "newLine": true,
-            "lg": 3
+        "tab2": {
+            "type": "panel",
+            "label": "Tab Alexa",
+            "items": {
+                "alexa": {
+                    "type": "checkbox",
+                    "label": "Activate alexa",
+                    "sm": 6,
+                    "newLine": true
+                },
+                "text.KEY_POWER": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_POWER",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_MUTE": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_MUTE",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_MENU": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_MENU",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_VOLUMEDOWN": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_VOLUMEDOWN",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_VOLUMEUP": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_VOLUMEUP",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_CHANNELDOWN": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_CHANNELDOWN",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_CHANNELUP": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_CHANNELUP",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_DOWN": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_DOWN",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_UP": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_UP",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_LEFT": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_LEFT",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_RIGHT": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_RIGHT",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_EXIT": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_EXIT",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_INFO": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_INFO",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_OK": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_OK",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_PLAYPAUSE": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_PLAYPAUSE",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_RADIO": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_RADIO",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_RECORD": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_RECORD",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_STOP": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_STOP",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.KEY_TV": {
+                    "type": "text",
+                    "label": "ALEXA_KEY_TV",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.DEEP_STANDBY": {
+                    "type": "text",
+                    "label": "ALEXA_DEEP_STANDBY",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.REBOOT": {
+                    "type": "text",
+                    "label": "ALEXA_REBOOT",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.REBOOT_ENIGMA": {
+                    "type": "text",
+                    "label": "ALEXA_REBOOT_ENIGMA",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.STANDBY": {
+                    "type": "text",
+                    "label": "ALEXA_STANDBY",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.TOGGLE_STANDBY": {
+                    "type": "text",
+                    "label": "ALEXA_TOGGLE_STANDBY",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.WAKEUP": {
+                    "type": "text",
+                    "label": "ALEXA_WAKEUP",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.WOL": {
+                    "type": "text",
+                    "label": "ALEXA_WOL",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa",
+                    "hidden": "data.mac == ''"
+                },
+                "text.SET_VOLUME": {
+                    "type": "text",
+                    "label": "ALEXA_SET_VOLUME",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                }
+            }
         }
     }
 }
