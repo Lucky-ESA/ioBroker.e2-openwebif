@@ -60,5 +60,7 @@
     "sshUser": "Utilisateur SSH",
     "SSHUser": "Utilisateur SSH (racine par défaut)",
     "SSHPASSWORD": "Mot de passe SSH",
-    "SSHPassword": "Mot de passe SSH"
+    "SSHPassword": "Mot de passe SSH",
+    "snapshot": "Texte Alexa pour SNAPSHOT",
+    "snapshot_osd": "Texte Alexa pour SNAPSHOT-OSD"
 }

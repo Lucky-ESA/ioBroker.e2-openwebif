@@ -26,13 +26,13 @@ fi
 if [ "${1}" == "1" ]; then
 	if [ ! -f "/etc/init.d/<device>_off.sh" ]; then
 		echo "#!/bin/bash" > /etc/init.d/<device>_off.sh
-		echo "wget -q ${2}2 >/dev/null 2>&1" >> /etc/init.d/<device>_off.sh
+		echo "wget -O - -q ${2}2 >/dev/null 2>&1" >> /etc/init.d/<device>_off.sh
 		echo "exit 0" >> /etc/init.d/<device>_off.sh
 		chmod 775 /etc/init.d/<device>_off.sh
 	fi
 	if [ ! -f "/etc/init.d/<device>_on.sh" ]; then
 		echo "#!/bin/bash" > /etc/init.d/<device>_on.sh
-		echo "wget -q ${2}1 >/dev/null 2>&1" >> /etc/init.d/<device>_on.sh
+		echo "wget -O - -q ${2}1 >/dev/null 2>&1" >> /etc/init.d/<device>_on.sh
 		echo "exit 0" >> /etc/init.d/<device>_on.sh
 		chmod 775 /etc/init.d/<device>_on.sh
 	fi
@@ -64,6 +64,6 @@ if [ "${1}" == "2" ]; then
 	fi
 fi
 if [ "${1}" == "3" ]; then
-	echo $(wget -O- -q http://127.0.0.1/web/timerlist |grep "e2state" | grep -c ">2<")
+	echo $(wget -O - -q http://127.0.0.1/web/timerlist |grep "e2state" | grep -c ">2<")
 fi
 exit 0

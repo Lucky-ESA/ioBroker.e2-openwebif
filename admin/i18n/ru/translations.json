@@ -60,5 +60,7 @@
     "sshUser": "SSH-пользователь",
     "SSHUser": "Пользователь SSH (по умолчанию root)",
     "SSHPASSWORD": "SSH-пароль",
-    "SSHPassword": "SSH-пароль"
+    "SSHPassword": "SSH-пароль",
+    "snapshot": "Текст Alexa для SNAPSHOT",
+    "snapshot_osd": "Текст Alexa для SNAPSHOT-OSD"
 }

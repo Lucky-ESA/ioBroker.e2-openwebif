@@ -139,7 +139,9 @@
             "TOGGLE_STANDBY": "",
             "WAKEUP": "",
             "WOL": "",
-            "SET_VOLUME": ""
+            "SET_VOLUME": "",
+            "SNAPSHOT": "",
+            "SNAPSHOT_OSD": ""
         }
     },
     "objects": [],

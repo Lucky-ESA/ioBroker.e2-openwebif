@@ -3,7 +3,7 @@
     "Device IP": "Geräte-IP",
     "User": "Benutzer",
     "Port": "Geräte-Port",
-    "Use HTTPS": "Verwenden Sie HTTPS?",
+    "Use HTTPS": "HTTPS verwenden?",
     "Password": "Passwort",
     "Interval": "Intervall in Sekunden",
     "3 Seconds": "3 Sekunden",
@@ -16,7 +16,7 @@
     "10 Seconds": "10 Sekunden",
     "SSH connection": "SSH-Verbindung für Deep-Standby. AUFMERKSAMKEIT! Dateien müssen eventuell manuell gelöscht werden.",
     "Your IP": "Deine IP-Adresse",
-    "source": "Wählen Sie eine einfache API-Quelle aus",
+    "source": "Wählen Sie eine SIMPLE-API Instance aus",
     "MAC": "MAC-Adresse für WOL (Format xx:xx:xx:xx:xx)",
     "Send Lucky": "Fehler an LUCKY-ESA senden",
     "error info": "Fehlerinfo für LUCKY ESA",
@@ -54,11 +54,13 @@
     "IP": "IP",
     "SSH": "SSH",
     "PASSWORD": "Passwort",
-    "YOUR MAC": "Ihr MAC",
+    "YOUR MAC": "Geräte MAC",
     "Activate": "Gerät aktivieren/deaktivieren",
     "Activ": "Aktiv",
     "sshUser": "SSH-Benutzer",
     "SSHUser": "SSH-Benutzer (Standard-Root)",
     "SSHPASSWORD": "SSH-Passwort",
-    "SSHPassword": "SSH-Passwort"
+    "SSHPassword": "SSH-Passwort",
+    "snapshot": "Alexa-Text für SNAPSHOT",
+    "snapshot_osd": "Alexa-Text für SNAPSHOT-OSD"
 }

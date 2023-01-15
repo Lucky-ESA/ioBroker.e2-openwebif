@@ -49,7 +49,7 @@
     "Alexa_STANDBY": "Texto Alexa para STANDBY",
     "Alexa_TOGGLE_STANDBY": "Texto Alexa para TOGGLE_STANDBY",
     "Alexa_WAKEUP": "Texto Alexa para WAKEUP",
-    "Alexa_WOL": "Texto Alexa para WOL",
+    "Alexa_WOL": "Alexa texto para WOL",
     "HTTPS": "HTTPS",
     "IP": "IP",
     "SSH": "SSH",
@@ -60,5 +60,7 @@
     "sshUser": "Usuário SSH",
     "SSHUser": "Usuário SSH (raiz padrão)",
     "SSHPASSWORD": "Senha SSH",
-    "SSHPassword": "Senha SSH"
+    "SSHPassword": "Senha SSH",
+    "snapshot": "Texto Alexa para SNAPSHOT",
+    "snapshot_osd": "Texto Alexa para SNAPSHOT-OSD"
 }

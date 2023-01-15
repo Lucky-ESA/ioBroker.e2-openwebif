@@ -60,5 +60,7 @@
     "sshUser": "Usuario SSH",
     "SSHUser": "Usuario SSH (raíz predeterminado)",
     "SSHPASSWORD": "Contraseña SSH",
-    "SSHPassword": "Contraseña SSH"
+    "SSHPassword": "Contraseña SSH",
+    "snapshot": "Texto de Alexa para INSTANTÁNEA",
+    "snapshot_osd": "Texto de Alexa para SNAPSHOT-OSD"
 }

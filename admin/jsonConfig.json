@@ -350,6 +350,20 @@
                     "sm": 6,
                     "newLine": true,
                     "disabled": "!data.alexa"
+                },
+                "text.SNAPSHOT": {
+                    "type": "text",
+                    "label": "ALEXA_snapshot",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
+                },
+                "text.SNAPSHOT_OSD": {
+                    "type": "text",
+                    "label": "ALEXA_snapshot_osd",
+                    "sm": 6,
+                    "newLine": true,
+                    "disabled": "!data.alexa"
                 }
             }
         }

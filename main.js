@@ -298,7 +298,7 @@ class E2Openwebif extends utils.Adapter {
         });
         if (val) {
             this.offlineInterval[id] = setInterval(async () => {
-                //this.log.debug(`Check device standby`);
+                this.log.debug(`Check device standby`);
                 this.updateDevice(id);
             }, times * 1000);
         } else {
@@ -365,7 +365,7 @@ class E2Openwebif extends utils.Adapter {
                 return;
             }
             const powerstate = await this.getRequest(cs.API.powerstate, id);
-            //this.log.debug("INFO powerstate: " + JSON.stringify(powerstate));
+            this.log.debug("INFO powerstate: " + JSON.stringify(powerstate));
             if (!powerstate) {
                 this.log.debug(`Device ${id} is offline`);
                 this.isOnline[id] = 2;
@@ -417,8 +417,8 @@ class E2Openwebif extends utils.Adapter {
                     getcurrent.tunerinfo = tunersignal;
                 }
             }
-            //this.log.debug("INFO getcurrent: " + JSON.stringify(getcurrent));
-            //this.log.debug("INFO tunersignal: " + JSON.stringify(tunersignal));
+            this.log.debug("INFO getcurrent: " + JSON.stringify(getcurrent));
+            this.log.debug("INFO tunersignal: " + JSON.stringify(tunersignal));
             if (
                 getcurrent.info &&
                 getcurrent.info.pmtpid &&
@@ -462,11 +462,11 @@ class E2Openwebif extends utils.Adapter {
     }
 
     getRequest(path, id) {
-        //this.log.debug("Request: " + path);
+        this.log.debug("Request: " + path);
         try {
             return this.axiosInstance[id](path)
                 .then((response) => {
-                    //this.log.debug(JSON.stringify(response.data));
+                    this.log.debug(JSON.stringify(response.data));
                     this.isOnline[id] = 1;
                     return response.data;
                 })
@@ -669,10 +669,10 @@ class E2Openwebif extends utils.Adapter {
                     startkey: `${this.namespace}.192_168_2_188.remote.snapshot.pictures.`,
                     endkey: `${this.namespace}.192_168_2_188.remote.snapshot.pictures.\u9999`
                 });
-                //this.log.debug("all_dp: " + JSON.stringify(all_dp));
+                this.log.debug("all_dp: " + JSON.stringify(all_dp));
                 if (all_dp && all_dp.rows) {
                     for (const element of all_dp.rows) {
-                        //this.log.debug("element: " + JSON.stringify(element));
+                        this.log.debug("element: " + JSON.stringify(element));
                         if (
                             element &&
                             element.value &&
@@ -721,7 +721,7 @@ class E2Openwebif extends utils.Adapter {
                         this.sendLucky(e, "try deletesnapshot foreach");
                     }
                 });
-                //end cleanup img/ folder
+                //end cleanup img/ folder and datapoints
                 const obj = await this.getObjectAsync(id);
                 this.log.debug("deletesnapshot obj: " + JSON.stringify(obj));
                 if (obj && obj.native && obj.native.img && obj.native.img != "") {
@@ -752,11 +752,13 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async createsnapshot(command, state, deviceId) {
+        this.log.info("HOST: " + this.host);
         try {
+            this.log.debug(`COMMAND: ${command}`);
             let url = `/grab?command=-o&r=1080&format=png&jpgquali=100`;
-            if (command === "snapshot_link") {
-                url += `/&mode=osd`;
-            } else if (command === "snapshot_osd") {
+            if (command === "snapshot_osd") {
+                url += `&mode=osd`;
+            } else if (command === "snapshot_link") {
                 url = state.val;
             }
             if (this.config.your_ip == "") {
@@ -772,20 +774,25 @@ class E2Openwebif extends utils.Adapter {
                 }
                 this.config.your_ip = obj_host.common.address[0];
             }
+            this.log.debug(`URL: ${url}`);
             const res = await this.axiosSnapshot[deviceId](url)
                 .then((response) => {
                     if (response && response.status === 200) {
                         const writer = fs.createWriteStream("/tmp/image.jpg");
                         response.data.pipe(writer);
                         return new Promise((resolve, reject) => {
-                            writer.on('finish', () => {
+                            this.log.debug(`Start Promise`);
+                            writer.on('finish', async () => {
+                                this.log.debug(`Finish`);
                                 if (fs.existsSync("/tmp/image.jpg")) {
                                     const pic = fs.readFileSync('/tmp/image.jpg');
                                     const current_time = Date.now();
                                     const picname = "screenshot_" + current_time + ".jpg";
                                     const picpath = "img/" + picname;
-                                    const address = `http://${this.config.your_ip}/e2-openwebif.admin${picpath}`;
-                                    this.writeFile("e2-openwebif.admin", picpath, pic, async (error) => {
+                                    const address = `http://${this.config.your_ip}/e2-openwebif.admin/${picpath}`;
+                                    this.log.debug(`picpath: ${picpath}`);
+                                    this.log.debug(`address: ${address}`);
+                                    await this.writeFileAsync("e2-openwebif.admin", picpath, pic, async (error) => {
                                         try {
                                             if(!error) {
                                                 this.log.debug(`OK`);
@@ -810,8 +817,8 @@ class E2Openwebif extends utils.Adapter {
                                                     path: "e2-openwebif.admin"
                                                 };
                                                 await this.createDataPoint(`${deviceId}.remote.snapshot.pictures.${current_time}`, common, "state", native);
-                                                this.setState(`${deviceId}.remote.snapshot.pictures.${current_time}`, {
-                                                    val: `http://${this.config.your_ip}/e2-openwebif.admin${picpath}`,
+                                                await this.setStateAsync(`${deviceId}.remote.snapshot.pictures.${current_time}`, {
+                                                    val: address,
                                                     ack: true
                                                 });
                                                 resolve(true);
@@ -820,13 +827,13 @@ class E2Openwebif extends utils.Adapter {
                                                 reject(error);
                                             }
                                         } catch (e) {
-                                            this.sendLucky(e, "try createsnapshot");
+                                            this.sendLucky(e, "try writeFile createsnapshot");
                                         }
                                     });
+                                    resolve(true);
                                 } else {
                                     reject("Cannot create /tmp/image.jpg");
                                 }
-                                resolve(true);
                             });
                             writer.on('error', (error) => {
                                 reject(error);
@@ -834,9 +841,10 @@ class E2Openwebif extends utils.Adapter {
                         });
                     }
                 })
-                .catch(function (e) {
-                    throw new Error(e);
+                .catch((e) => {
+                    this.sendLucky(e, "try axiosSnapshot");
                 });
+            this.log.debug(`res: ${res}`);
             if (res) {
                 this.log.info(`Create Screenshot`);
             } else {
@@ -1391,8 +1399,6 @@ class E2Openwebif extends utils.Adapter {
                 return;
             }
             const ssh2 = new SSH2Promise(sshconfig2);
-            //const ssh_dp = await this.getStateAsync(`${deviceId}.SSH_CREATED`);
-            //const ssh_connection = ssh_dp && ssh_dp.val ? ssh_dp.val : false;
             await ssh2.connect().then(async () => {
                 try {
                     this.log.info("Connection established");
@@ -1400,7 +1406,7 @@ class E2Openwebif extends utils.Adapter {
                     resp = await this.commandToSSH2(ssh2, "/home/" + deviceId + ".sh");
                     resp = resp.replace(/(\r\n|\r|\n)/g, "");
                     data = data.toString().replace(/<device>/g, deviceId);
-                    //this.log.debug(`Replace ${data}`);
+                    this.log.debug(`Replace ${data}`);
                     this.log.debug(`Response ${resp}`);
                     if (resp === "iobroker" && this.devicesID[deviceId].ssh) {
                         this.log.info(`Set true`);
@@ -1477,17 +1483,19 @@ class E2Openwebif extends utils.Adapter {
     async sendSSH(state, deviceId) {
         try {
             if (state && state.val && state.val != "" && this.devicesID[deviceId].ssh) {
-                const sshconfig2 = {
+                const sshconfig2 = {};
+                const ssh2 = {};
+                sshconfig2[deviceId] = {
                     host: this.devicesID[deviceId].ip,
                     username: this.devicesID[deviceId].sshuser,
                     password: this.devicesID[deviceId].sshpassword
                 };
-                const ssh2 = new SSH2Promise(sshconfig2);
-                await ssh2.connect().then(async () => {
+                ssh2[deviceId] = new SSH2Promise(sshconfig2[deviceId]);
+                await ssh2[deviceId].connect().then(async () => {
                     try {
                         this.log.info("Connection established");
                         let resp = "";
-                        resp = await this.commandToSSH2(ssh2, state.val);
+                        resp = await this.commandToSSH2(ssh2[deviceId], state.val);
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         this.setState(`${deviceId}.remote.ssh.responseCommand`, {
                             val: resp,
@@ -1497,7 +1505,7 @@ class E2Openwebif extends utils.Adapter {
                         this.sendLucky(e, "try sendSSH connect");
                     }
                 });
-                ssh2.close();
+                ssh2[deviceId].close();
             }
         } catch (e) {
             this.sendLucky(e, "try sendSSH");
@@ -1514,7 +1522,6 @@ class E2Openwebif extends utils.Adapter {
                 return res;
             }
         } catch (e) {
-            //this.sendLucky(e, "try commandToSSH2");
             return e;
         }
     }
@@ -1587,32 +1594,41 @@ class E2Openwebif extends utils.Adapter {
 
     async sendLucky(error, func) {
         try {
-            this.log.error(`${func}: ${error}`);
-            //system.host.iobroker.versions.nodeNewest
-            //system.host.iobroker.versions.npmCurrent
+            this.log.debug(`${func}: ${error}`);
             if (this.config.lucky) {
-                const defaultHeaders = {
-                    "x-Adapter": "Openwebif",
-                    "x-Adapter-Version": this.version,
-                    "x-Node": "16.16",
-                    "x-NPM": "8.7.2",
-                    "x-Language": this.lang,
-                    "x-Errorinfo": this.config.errorinfo,
-                    "x-ErrorReport": "TryError",
-                    "x-Function": func,
-                };
-                const response = await axios({
-                    method: "get",
-                    url: "https://luckyskills.de/ioBroker/openwebif/",
-                    headers: defaultHeaders,
-                    params: {
-                        Report: "ErrorReport"
-                    },
-                    data: {
-                        error: JSON.stringify(error)
-                    }
-                });
-                this.log.debug(`response sendLucky: ${JSON.stringify(response.data)}`);
+                const obj = await this.getForeignObjectAsync("system.host." + this.host);
+                const npm = await this.getForeignStateAsync("system.host." + this.host + ".versions.npmCurrent");
+                let npmVal;
+                if (npm && npm.val) {
+                    npmVal = npm.val;
+                } else {
+                    npmVal = "UNKNOWN";
+                }
+                if (obj && obj.common && obj.common) {
+                    const defaultHeaders = {
+                        "x-Adapter": "Openwebif",
+                        "x-Adapter-Version": this.version,
+                        "x-contoller": obj.common.installedVersion,
+                        "x-Node": obj.native.process.versions.node,
+                        "x-NPM": npmVal,
+                        "x-Language": this.lang,
+                        "x-Errorinfo": this.config.errorinfo,
+                        "x-ErrorReport": "TryError",
+                        "x-Function": func
+                    };
+                    const response = await axios({
+                        method: "get",
+                        url: "https://luckyskills.de/ioBroker/openwebif/",
+                        headers: defaultHeaders,
+                        params: {
+                            Report: "ErrorReport"
+                        },
+                        data: {
+                            error: JSON.stringify(error)
+                        }
+                    });
+                    this.log.debug(`response sendLucky: ${JSON.stringify(response.data)}`);
+                }
             }
         } catch (error) {
             this.log.error(`sendLucky: ${error}`);
