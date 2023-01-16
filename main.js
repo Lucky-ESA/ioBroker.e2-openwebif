@@ -74,6 +74,27 @@ class E2Openwebif extends utils.Adapter {
     async onReady() {
         // Initialize your adapter here
         try {
+            let isdecode = false;
+            if (
+                this.adapterConfig &&
+                this.adapterConfig.native &&
+                this.adapterConfig.native.devices
+            ) {
+                for (const pw of this.adapterConfig.native.devices) {
+                    if (pw.password != "" && pw.password.match(/aes-192/ig) === null) {
+                        pw.password = this.encrypt(pw.password);
+                        isdecode = true;
+                    }
+                    if (pw.sshpassword != "" && pw.sshpassword.match(/aes-192/ig) === null) {
+                        pw.sshpassword = this.encrypt(pw.sshpassword);
+                        isdecode = true;
+                    }
+                }
+            }
+            if (isdecode) {
+                this.log.info("Encrypt all passwords done.");
+                this.updateConfig(this.adapterConfig);
+            }
             const obj = await this.getForeignObjectAsync("system.config");
             if (obj && obj.common && obj.common.language) {
                 try {
@@ -88,6 +109,8 @@ class E2Openwebif extends utils.Adapter {
                 }
                 this.log.info("Language: " + this.lang);
                 const id = element.ip.replace(/[.\s]+/g, "_");
+                element.password = this.decrypt(element.password);
+                element.sshpassword = this.decrypt(element.sshpassword);
                 this.isSame[id] = 4;
                 this.updateInterval[id] = null;
                 this.offlineInterval[id] = null;
@@ -1138,6 +1161,7 @@ class E2Openwebif extends utils.Adapter {
                 this.updateInterval[deviceId] = null;
                 this.offlineInterval[deviceId] = null;
                 this.isOnline[deviceId] = 2;
+                this.isSame[deviceId] = 4;
                 this.setNewInterval(3600, false, deviceId);
             } else if (state && state.val === 1) {
                 this.log.debug(`Set Status online. Change interval to ${this.config.interval} sec.`);
@@ -1146,6 +1170,7 @@ class E2Openwebif extends utils.Adapter {
                 this.updateInterval[deviceId] = null;
                 this.offlineInterval[deviceId] = null;
                 this.isOnline[deviceId] = 1;
+                this.isSame[deviceId] = 4;
                 this.setNewInterval(this.config.interval, true, deviceId);
             }
             this.setState(id, {

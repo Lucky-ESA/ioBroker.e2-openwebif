@@ -5,7 +5,6 @@
         "tab1": {
             "type": "panel",
             "label": "Tab Device",
-            "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij4NCiAgICA8cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0zIDE3LjI1VjIxaDMuNzVMMTcuODEgOS45NGwtMy43NS0zLjc1TDMgMTcuMjV6TTIwLjcxIDcuMDRjLjM5LS4zOS4zOS0xLjAyIDAtMS40MWwtMi4zNC0yLjM0Yy0uMzktLjM5LTEuMDItLjM5LTEuNDEgMGwtMS44MyAxLjgzIDMuNzUgMy43NSAxLjgzLTEuODN6Ii8+DQo8L3N2Zz4=",
             "items": {
                 "devices": {
                     "newLine": true,
@@ -20,7 +19,8 @@
                             "title": "Activ",
                             "tooltip": "Activate",
                             "filter": false,
-                            "sort": false
+                            "sort": false,
+                            "default": false
                         },
                         {
                             "type": "text",
@@ -29,7 +29,8 @@
                             "title": "IP",
                             "tooltip": "Device IP",
                             "filter": true,
-                            "sort": true
+                            "sort": true,
+                            "default": "127.0.0.1"
                         },
                         {
                             "type": "number",
@@ -38,7 +39,9 @@
                             "title": "Port",
                             "tooltip": "Port",
                             "filter": false,
-                            "sort": true
+                            "sort": true,
+                            "default": 80
+                            
                         },
                         {
                             "type": "text",
@@ -47,7 +50,8 @@
                             "title": "User",
                             "tooltip": "User",
                             "filter": false,
-                            "sort": false
+                            "sort": false,
+                            "default": "root"
                         },
                         {
                             "type": "password",
@@ -56,7 +60,8 @@
                             "title": "PASSWORD",
                             "tooltip": "Password",
                             "filter": false,
-                            "sort": false
+                            "sort": false,
+                            "default": ""
                         },
                         {
                             "type": "checkbox",
@@ -65,7 +70,8 @@
                             "title": "HTTPS",
                             "tooltip": "Use HTTPS",
                             "filter": false,
-                            "sort": false
+                            "sort": false,
+                            "default": false
                         },
                         {
                             "type": "checkbox",
@@ -74,7 +80,8 @@
                             "title": "SSH",
                             "tooltip": "SSH connection",
                             "filter": false,
-                            "sort": false
+                            "sort": false,
+                            "default": false
                         },
                         {
                             "type": "text",
@@ -83,7 +90,8 @@
                             "title": "sshUser",
                             "tooltip": "SSHUser",
                             "filter": false,
-                            "sort": false
+                            "sort": false,
+                            "default": ""
                         },
                         {
                             "type": "password",
@@ -92,7 +100,8 @@
                             "title": "SSHPASSWORD",
                             "tooltip": "SSHPassword",
                             "filter": false,
-                            "sort": false
+                            "sort": false,
+                            "default": ""
                         },
                         {
                             "type": "text",
@@ -101,7 +110,8 @@
                             "title": "YOUR MAC",
                             "tooltip": "MAC",
                             "filter": false,
-                            "sort": false
+                            "sort": false,
+                            "default": ""
                         }
                     ]
                 },
@@ -119,14 +129,16 @@
                         {"label": "8 Seconds", "value": 8},
                         {"label": "9 Seconds", "value": 9},
                         {"label": "10 Seconds", "value": 10}
-                    ]
+                    ],
+                    "default": 5
                 },
                 "your_ip": {
                     "type": "ip",
                     "newLine": true,
                     "onlyIp4": true,
                     "sm": 3,
-                    "label": "Your IP"
+                    "label": "Your IP",
+                    "default": ""
                 },
                 "simple_api": {
                     "newLine": true,
@@ -135,19 +147,22 @@
                     "sm": 12,
                     "md": 6,
                     "lg": 3,
-                    "adapter": "simple-api"
+                    "adapter": "simple-api",
+                    "default": ""
                 },
                 "lucky": {
                     "type": "checkbox",
                     "newLine": true,
                     "sm": 6,
-                    "label": "Send Lucky"
+                    "label": "Send Lucky",
+                    "default": false
                 },
                 "errorinfo": {
                     "type": "text",
                     "label": "error info",
                     "sm": 6,
-                    "newLine": true
+                    "newLine": true,
+                    "default": ""
                 }
             }
         },
@@ -159,182 +174,208 @@
                     "type": "checkbox",
                     "label": "Activate alexa",
                     "sm": 6,
-                    "newLine": true
+                    "newLine": true,
+                    "default": false
                 },
                 "text.KEY_POWER": {
                     "type": "text",
                     "label": "ALEXA_KEY_POWER",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_MUTE": {
                     "type": "text",
                     "label": "ALEXA_KEY_MUTE",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_MENU": {
                     "type": "text",
                     "label": "ALEXA_KEY_MENU",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_VOLUMEDOWN": {
                     "type": "text",
                     "label": "ALEXA_KEY_VOLUMEDOWN",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_VOLUMEUP": {
                     "type": "text",
                     "label": "ALEXA_KEY_VOLUMEUP",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_CHANNELDOWN": {
                     "type": "text",
                     "label": "ALEXA_KEY_CHANNELDOWN",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_CHANNELUP": {
                     "type": "text",
                     "label": "ALEXA_KEY_CHANNELUP",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_DOWN": {
                     "type": "text",
                     "label": "ALEXA_KEY_DOWN",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_UP": {
                     "type": "text",
                     "label": "ALEXA_KEY_UP",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_LEFT": {
                     "type": "text",
                     "label": "ALEXA_KEY_LEFT",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_RIGHT": {
                     "type": "text",
                     "label": "ALEXA_KEY_RIGHT",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_EXIT": {
                     "type": "text",
                     "label": "ALEXA_KEY_EXIT",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_INFO": {
                     "type": "text",
                     "label": "ALEXA_KEY_INFO",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_OK": {
                     "type": "text",
                     "label": "ALEXA_KEY_OK",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_PLAYPAUSE": {
                     "type": "text",
                     "label": "ALEXA_KEY_PLAYPAUSE",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_RADIO": {
                     "type": "text",
                     "label": "ALEXA_KEY_RADIO",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_RECORD": {
                     "type": "text",
                     "label": "ALEXA_KEY_RECORD",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_STOP": {
                     "type": "text",
                     "label": "ALEXA_KEY_STOP",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.KEY_TV": {
                     "type": "text",
                     "label": "ALEXA_KEY_TV",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.DEEP_STANDBY": {
                     "type": "text",
                     "label": "ALEXA_DEEP_STANDBY",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.REBOOT": {
                     "type": "text",
                     "label": "ALEXA_REBOOT",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.REBOOT_ENIGMA": {
                     "type": "text",
                     "label": "ALEXA_REBOOT_ENIGMA",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.STANDBY": {
                     "type": "text",
                     "label": "ALEXA_STANDBY",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.TOGGLE_STANDBY": {
                     "type": "text",
                     "label": "ALEXA_TOGGLE_STANDBY",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.WAKEUP": {
                     "type": "text",
                     "label": "ALEXA_WAKEUP",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.WOL": {
                     "type": "text",
@@ -342,28 +383,32 @@
                     "sm": 6,
                     "newLine": true,
                     "disabled": "!data.alexa",
-                    "hidden": "data.mac == ''"
+                    "hidden": "data.mac == ''",
+                    "default": ""
                 },
                 "text.SET_VOLUME": {
                     "type": "text",
                     "label": "ALEXA_SET_VOLUME",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.SNAPSHOT": {
                     "type": "text",
                     "label": "ALEXA_snapshot",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 },
                 "text.SNAPSHOT_OSD": {
                     "type": "text",
                     "label": "ALEXA_snapshot_osd",
                     "sm": 6,
                     "newLine": true,
-                    "disabled": "!data.alexa"
+                    "disabled": "!data.alexa",
+                    "default": ""
                 }
             }
         }

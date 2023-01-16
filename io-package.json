@@ -100,11 +100,11 @@
                 "user": "root",
                 "password": "",
                 "https": false,
-                "ssh": false,
+                "ssh": true,
                 "sshuser": "root",
                 "sshpassword": "",
                 "mac": ""
-            }
+              }
         ],
         "interval": 5,
         "your_ip": "",
