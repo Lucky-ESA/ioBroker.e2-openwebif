@@ -10,17 +10,15 @@
 const utils = require("@iobroker/adapter-core");
 
 // Load your modules here, e.g.:
-const axios       = require("axios");
+const axios       = require("axios").default;
 const wol         = require("wol");
 const net         = require("net");
 const SSH2Promise = require("ssh2-promise");
 const Json2iob    = require("./lib/json2iob");
 const helper      = require("./lib/helper");
 const cs          = require("./lib/constants");
-const encodeurl   = require("encodeurl");
 const fs          = require("fs");
 const https       = require("https");
-const { isNativeError } = require("util/types");
 
 const httpsAgent  = new https.Agent({
     rejectUnauthorized: false
@@ -125,13 +123,11 @@ class E2Openwebif extends utils.Adapter {
                     webadd = "https://";
                 }
                 const url = `${webadd}${element.ip}:${element.port}`;
-                // @ts-ignore
                 this.axiosInstance[id] = axios.create({
                     method: "GET",
                     baseURL: url,
                     timeout: 10000,
                     responseType: "json",
-                    charset: "utf-8",
                     responseEncoding: "utf-8",
                     ...data,
                 });
@@ -139,7 +135,6 @@ class E2Openwebif extends utils.Adapter {
                     method: "GET",
                     baseURL: url,
                     timeout: 10000,
-                    "content-type": "image/jpeg",
                     responseType: "stream",
                     ...data,
                 });
@@ -205,7 +200,7 @@ class E2Openwebif extends utils.Adapter {
                         this.log.info(`Create Bouquets and EPG`);
                         await this.createBouquetsAndEPG(id, bouquets);
                     }
-                    if (element.sshuser != "" && element.sshpassword != "" && element.ssh) {
+                    if (element.sshuser != "" && element.sshpassword != "") {
                         await this.connect_ssh(id);
                     }
                 }
@@ -391,23 +386,39 @@ class E2Openwebif extends utils.Adapter {
             + "/picon/" +
             getcurrent.now.sref.replace(/:/g, "_").slice(0, -1)
             + ".png";
-            await this.setStateAsync(`${id}.statusInfo.next.picon`, {
+            this.setState(`${id}.statusInfo.next.picon`, {
                 val: picon,
                 ack: true
             });
-            await this.setStateAsync(`${id}.statusInfo.now.picon`, {
+            this.setState(`${id}.statusInfo.now.picon`, {
                 val: picon,
                 ack: true
             });
             if (getcurrent.next && getcurrent.next.remaining) {
-                await this.setStateAsync(`${id}.statusInfo.next.remaining_time`, {
+                this.setState(`${id}.statusInfo.next.remaining_time`, {
                     val: (await this.convertRemaining(getcurrent.next.remaining)).toString(),
                     ack: true
                 });
             }
             if (getcurrent.now && getcurrent.now.remaining) {
-                await this.setStateAsync(`${id}.statusInfo.now.remaining_time`, {
+                this.setState(`${id}.statusInfo.now.remaining_time`, {
                     val: (await this.convertRemaining(getcurrent.now.remaining)).toString(),
+                    ack: true
+                });
+            }
+            if (getcurrent.now && getcurrent.now.begin_timestamp && getcurrent.now.duration_sec) {
+                this.setState(`${id}.statusInfo.now.end_timestamp`, {
+                    val: getcurrent.now.begin_timestamp + getcurrent.now.duration_sec,
+                    ack: true
+                });
+                this.setState(`${id}.statusInfo.now.event_percent`, {
+                    val: Math.round((getcurrent.now.duration_sec - getcurrent.now.remaining) * 100 / getcurrent.now.duration_sec),
+                    ack: true
+                });
+            }
+            if (getcurrent.next && getcurrent.next.begin_timestamp && getcurrent.next.duration_sec) {
+                this.setState(`${id}.statusInfo.next.end_timestamp`, {
+                    val: getcurrent.next.begin_timestamp + getcurrent.next.duration_sec,
                     ack: true
                 });
             }
@@ -554,7 +565,7 @@ class E2Openwebif extends utils.Adapter {
                         }
                         break;
                     case "pictures":
-                        this.deletesnapshot(state, id, deviceId);
+                        this.deletesnapshot(state, id);
                         break;
                     case "SET_BOUQUETS":
                         this.setBouquestAndEPG(state, "bouquets.SET_CHANNEL", id, deviceId);
@@ -635,10 +646,10 @@ class E2Openwebif extends utils.Adapter {
                     case "snapshot":
                     case "snapshot_link":
                     case "snapshot_osd":
-                        this.createsnapshot(command, state, deviceId);
+                        this.createsnapshot(id, command, state, deviceId);
                         break;
                     case "sendCommand":
-                        this.sendSSH(state, deviceId);
+                        this.sendSSH(id, state, deviceId);
                         break;
                     case "answer":
                     case "message":
@@ -654,7 +665,7 @@ class E2Openwebif extends utils.Adapter {
         }
     }
 
-    async deletesnapshot(state, id, deviceId) {
+    async deletesnapshot(state, id) {
         try {
             if (state.val === "delete") {
                 //start cleanup img/ folder and datapoints
@@ -732,6 +743,7 @@ class E2Openwebif extends utils.Adapter {
                                 try {
                                     await this.delObjectAsync(id);
                                     this.log.info("Delete datapoint: " + id);
+                                    this.setAckFlag(id, {result: true});
                                 } catch (e) {
                                     this.log.info("Error delete datapoint: " + e);
                                 }
@@ -751,7 +763,7 @@ class E2Openwebif extends utils.Adapter {
         }
     }
 
-    async createsnapshot(command, state, deviceId) {
+    async createsnapshot(id, command, state, deviceId) {
         this.log.info("HOST: " + this.host);
         try {
             this.log.debug(`COMMAND: ${command}`);
@@ -847,6 +859,7 @@ class E2Openwebif extends utils.Adapter {
             this.log.debug(`res: ${res}`);
             if (res) {
                 this.log.info(`Create Screenshot`);
+                this.setAckFlag(id, {result: true});
             } else {
                 this.log.info(`Cannot create Screenshot`);
             }
@@ -945,7 +958,7 @@ class E2Openwebif extends utils.Adapter {
             const bouquets = await this.getRequest(cs.API.bouquets, deviceId);
             this.setAckFlag(id, bouquets);
             if (!bouquets || !bouquets["bouquets"]) {
-                this.log.warn(`Cannot find Bouquets from ${this.config.ip} device`);
+                this.log.warn(`Cannot find Bouquets from ${this.devicesID[deviceId].ip} device`);
             } else {
                 this.log.info(`Create Bouquets and EPG`);
                 await this.loadBouquets(deviceId, bouquets);
@@ -1076,16 +1089,13 @@ class E2Openwebif extends utils.Adapter {
                     if (channel && channel.common && channel.common.states) {
                         delete channel.common.states;
                     }
-                    if (channel && channel.common && channel.common.states) {
-                        delete channel.common.states;
-                    }
                     if (channel && channel.native && channel.native.epg) {
                         delete channel.native.epg;
                     }
                     if (channel && channel.common) {
                         channel.common.states = new_states;
                         channel.native.epg = epgservice.events;
-                        await this.setForeignObjectAsync(`${this.namespace}.${deviceId}.remote.epg.SET_EPG_RECORDING`, channel);
+                        await this.setObjectAsync(`${this.namespace}.${deviceId}.remote.epg.SET_EPG_RECORDING`, channel);
                     }
                 }
             }
@@ -1123,6 +1133,8 @@ class E2Openwebif extends utils.Adapter {
                 this.log.debug(`Set Status deepstandby. Change interval to 60 min.`);
                 this.updateInterval[deviceId] && clearInterval(this.updateInterval[deviceId]);
                 this.offlineInterval[deviceId] && clearInterval(this.offlineInterval[deviceId]);
+                this.recordInterval[id] && clearInterval(this.recordInterval[id]);
+                this.recordInterval[id] = null;
                 this.updateInterval[deviceId] = null;
                 this.offlineInterval[deviceId] = null;
                 this.isOnline[deviceId] = 2;
@@ -1133,11 +1145,13 @@ class E2Openwebif extends utils.Adapter {
                 this.offlineInterval[deviceId] && clearInterval(this.offlineInterval[deviceId]);
                 this.updateInterval[deviceId] = null;
                 this.offlineInterval[deviceId] = null;
-                this.isOnline[deviceId] = 2;
+                this.isOnline[deviceId] = 1;
                 this.setNewInterval(this.config.interval, true, deviceId);
             }
-            const res = {result: true};
-            this.setAckFlag(id, res);
+            this.setState(id, {
+                val: this.isOnline[deviceId],
+                ack: true
+            });
         } catch (e) {
             this.sendLucky(e, "try changeStatus");
         }
@@ -1155,8 +1169,7 @@ class E2Openwebif extends utils.Adapter {
                         this.log.info(`WOL ERROR: ${err}`);
                     } else {
                         this.log.info(`Send WOL: ${res}`);
-                        const isSend = {result: true};
-                        this.setAckFlag(id, isSend);
+                        this.setAckFlag(id, {result: true});
                     }
                 });
             }
@@ -1211,7 +1224,7 @@ class E2Openwebif extends utils.Adapter {
                 return;
             }
             const path = "?text=" + send_message.val + "&type=" + send_type.val + "&timeout=" + send_timeout.val;
-            const return_message = await this.getRequest(`${cs.SET.message}${encodeurl(path)}`, deviceId);
+            const return_message = await this.getRequest(`${cs.SET.message}${encodeURI(path)}`, deviceId);
             this.setAckFlag(id, return_message);
             this.log.info("return_message: " + JSON.stringify(return_message));
             if (return_message && return_message.result && send_type.val == 0) {
@@ -1278,7 +1291,7 @@ class E2Openwebif extends utils.Adapter {
     async setZAPAndEPG(state, val, id, deviceId) {
         try {
             this.log.debug("state.val: " + state.val);
-            const ZAPandEPG = await this.getRequest(`${cs.SET[val]}${encodeurl(state.val)}`, deviceId);
+            const ZAPandEPG = await this.getRequest(`${cs.SET[val]}${encodeURI(state.val)}`, deviceId);
             this.setAckFlag(id, ZAPandEPG);
             this.log.debug("ZAPandEPG: " + JSON.stringify(ZAPandEPG));
             if (val === "epgbouquet" && ZAPandEPG && ZAPandEPG.events) {
@@ -1300,8 +1313,8 @@ class E2Openwebif extends utils.Adapter {
                 }
                 if (channel && channel.common) {
                     channel.common["states"] = new_states;
+                    await this.setObjectAsync(`${this.namespace}.${deviceId}.remote.epg.SET_EPG_CHANNEL`, channel);
                 }
-                await this.setForeignObjectAsync(`${this.namespace}.${deviceId}.remote.epg.SET_EPG_CHANNEL`, channel);
             }
         } catch (e) {
             this.sendLucky(e, "try setZAPAndEPG");
@@ -1311,7 +1324,7 @@ class E2Openwebif extends utils.Adapter {
     async setBouquestAndEPG(state, dp, id, deviceId) {
         try {
             if (state && state.val) {
-                const getservices = await this.getRequest(`${cs.SET.getservices}${encodeurl(state.val)}`, deviceId);
+                const getservices = await this.getRequest(`${cs.SET.getservices}${encodeURI(state.val)}`, deviceId);
                 this.setAckFlag(id, getservices);
                 if (getservices && getservices.services) {
                     this.log.debug("getservices: " + JSON.stringify(getservices));
@@ -1327,8 +1340,8 @@ class E2Openwebif extends utils.Adapter {
                     }
                     if (channel && channel.common) {
                         channel.common["states"] = new_states;
+                        await this.setObjectAsync(`${this.namespace}.${deviceId}.remote.${dp}`, channel);
                     }
-                    await this.setForeignObjectAsync(`${this.namespace}.${deviceId}.remote.${dp}`, channel);
                     this.setState(`${deviceId}.remote.bouquets.JSON_CHANNEL`, {
                         val: JSON.stringify(getservices.services),
                         ack: true
@@ -1398,14 +1411,28 @@ class E2Openwebif extends utils.Adapter {
                 this.log.info(`Cannot read file ${boxfile}`);
                 return;
             }
+            let scriptname;
+            const random = await this.getStateAsync(`${deviceId}.SSH_SCRIPTNAME`);
+            if (random && random.val == "") {
+                scriptname = deviceId + "_" + await this.makeRandomString(5);
+                this.setState(`${deviceId}.SSH_SCRIPTNAME`, {
+                    val: scriptname,
+                    ack: true
+                });
+            } else if (random && random.val != "") {
+                scriptname = random.val;
+            } else {
+                this.log.info(`Cannot create filename`);
+                return;
+            }
             const ssh2 = new SSH2Promise(sshconfig2);
             await ssh2.connect().then(async () => {
                 try {
                     this.log.info("Connection established");
                     let resp = "";
-                    resp = await this.commandToSSH2(ssh2, "/home/" + deviceId + ".sh");
+                    resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh");
                     resp = resp.replace(/(\r\n|\r|\n)/g, "");
-                    data = data.toString().replace(/<device>/g, deviceId);
+                    data = data.toString().replace(/<device>/g, scriptname);
                     this.log.debug(`Replace ${data}`);
                     this.log.debug(`Response ${resp}`);
                     if (resp === "iobroker" && this.devicesID[deviceId].ssh) {
@@ -1416,18 +1443,18 @@ class E2Openwebif extends utils.Adapter {
                         });
                     } else if (resp != "iobroker" && this.devicesID[deviceId].ssh) {
                         if (resp != "iobroker missing") {
-                            resp = await this.commandToSSH2(ssh2, `echo '${data}' > /home/${deviceId}.sh`);
-                            resp = await this.commandToSSH2(ssh2, "chmod 775 /home/" + deviceId + ".sh");
+                            resp = await this.commandToSSH2(ssh2, `echo '${data}' > /home/${scriptname}.sh`);
+                            resp = await this.commandToSSH2(ssh2, "chmod 775 /home/" + scriptname + ".sh");
                             resp = resp.replace(/(\r\n|\r|\n)/g, "");
                             if (resp === "OK") {
-                                this.log.info("Set chmod 775 for /home/" + deviceId + ".sh");
+                                this.log.info("Set chmod 775 for /home/" + scriptname + ".sh");
                             } else {
                                 this.log.info("Error set chmod 775: " + resp);
                                 ssh2.close();
                                 return;
                             }
                         }
-                        resp = await this.commandToSSH2(ssh2, "/home/" + deviceId + ".sh 1 " + get_url);
+                        resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh 1 " + get_url);
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
                             this.log.info("Create files and symlinks");
@@ -1441,7 +1468,7 @@ class E2Openwebif extends utils.Adapter {
                             return;
                         }
                     } else if (resp == "iobroker" && !this.devicesID[deviceId].ssh) {
-                        resp = await this.commandToSSH2(ssh2, "/home/" + deviceId + ".sh 2");
+                        resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh 2");
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
                             this.log.info("Delete files and symlinks");
@@ -1450,16 +1477,16 @@ class E2Openwebif extends utils.Adapter {
                             ssh2.close();
                             return;
                         }
-                        resp = await this.commandToSSH2(ssh2, "rm /home/" + deviceId + ".sh 2");
+                        resp = await this.commandToSSH2(ssh2, "rm /home/" + scriptname + ".sh 2");
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
-                            this.log.info("Delete /home/" + deviceId + ".sh");
+                            this.log.info("Delete /home/" + scriptname + ".sh");
                             this.setState(`${deviceId}.SSH_CREATED`, {
                                 val: false,
                                 ack: true
                             });
                         } else {
-                            this.log.info("Error delete /home/" + deviceId + ".sh: " + resp);
+                            this.log.info("Error delete /home/" + scriptname + ".sh: " + resp);
                             ssh2.close();
                             return;
                         }
@@ -1480,7 +1507,7 @@ class E2Openwebif extends utils.Adapter {
         }
     }
 
-    async sendSSH(state, deviceId) {
+    async sendSSH(id, state, deviceId) {
         try {
             if (state && state.val && state.val != "" && this.devicesID[deviceId].ssh) {
                 const sshconfig2 = {};
@@ -1501,6 +1528,7 @@ class E2Openwebif extends utils.Adapter {
                             val: resp,
                             ack: true
                         });
+                        this.setAckFlag(id, {result: true});
                     } catch (e) {
                         this.sendLucky(e, "try sendSSH connect");
                     }
@@ -1594,7 +1622,7 @@ class E2Openwebif extends utils.Adapter {
 
     async sendLucky(error, func) {
         try {
-            this.log.debug(`${func}: ${error}`);
+            this.log.warn(`${func}: ${error}`);
             if (this.config.lucky) {
                 const obj = await this.getForeignObjectAsync("system.host." + this.host);
                 const npm = await this.getForeignStateAsync("system.host." + this.host + ".versions.npmCurrent");
@@ -1645,6 +1673,16 @@ class E2Openwebif extends utils.Adapter {
         } catch (e) {
             this.sendLucky(e, "try setAckFlag");
         }
+    }
+
+    async makeRandomString(length) {
+        let result           = "";
+        const characters       = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const charactersLength = characters.length;
+        for ( let i = 0; i < length; i++ ) {
+            result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
     }
 }
 if (require.main !== module) {
