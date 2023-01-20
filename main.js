@@ -26,6 +26,10 @@ const httpsAgent  = new https.Agent({
 //    key: fs.readFileSync('./lib/client.key'),
 //    ca: fs.readFileSync('./lib/boxcert.cer'),
 });
+const standbyInterval = 60;
+const deepInterval = 3600;
+const recordInterval = 60;
+let sleepTimer = null;
 
 class E2Openwebif extends utils.Adapter {
 
@@ -54,17 +58,18 @@ class E2Openwebif extends utils.Adapter {
         this.axiosInstance = {};
         this.axiosSnapshot = {};
         this.updateInterval = {};
-        this.offlineInterval = {};
         this.recordInterval = {};
         this.messageInterval = {};
         this.devicesID = {};
         this.isOnline = {};
-        this.isSame = {};
+        this.currentInterval = {};
         this.folderstates = {};
         this.unloadDevices = [];
         this.counter = 1;
         this.load = {};
         this.loadname = {};
+        this.checkPicon = {};
+        this.checkCurrent = {};
         this.lang = "de";
     }
 
@@ -81,12 +86,11 @@ class E2Openwebif extends utils.Adapter {
                 this.adapterConfig.native.devices
             ) {
                 for (const pw of this.adapterConfig.native.devices) {
-                    if (pw.password != "" && pw.password.match(/aes-192/ig) === null) {
-                        pw.password = this.encrypt(pw.password);
+                    if (pw.password != "" && pw.password.match(/<LUCKY-ESA>/ig) === null) {
+                        pw.password = "<LUCKY-ESA>" + this.encrypt(pw.password);
                         isdecode = true;
-                    }
-                    if (pw.sshpassword != "" && pw.sshpassword.match(/aes-192/ig) === null) {
-                        pw.sshpassword = this.encrypt(pw.sshpassword);
+                    } else if (pw.sshpassword != "" && pw.sshpassword.match(/<LUCKY-ESA>/ig) === null) {
+                        pw.sshpassword = "<LUCKY-ESA>" + this.encrypt(pw.sshpassword);
                         isdecode = true;
                     }
                 }
@@ -109,22 +113,23 @@ class E2Openwebif extends utils.Adapter {
                 }
                 this.log.info("Language: " + this.lang);
                 const id = element.ip.replace(/[.\s]+/g, "_");
-                element.password = this.decrypt(element.password);
-                element.sshpassword = this.decrypt(element.sshpassword);
-                this.isSame[id] = 4;
+                element.password = this.decrypt(element.password.split("<LUCKY-ESA>")[1]);
+                element.sshpassword = this.decrypt(element.sshpassword.split("<LUCKY-ESA>")[1]);
+                this.currentInterval[id] = 0;
                 this.updateInterval[id] = null;
-                this.offlineInterval[id] = null;
                 this.recordInterval[id] = null;
                 this.messageInterval[id] = null;
+                this.checkPicon[id] = {};
+                this.checkCurrent[id] = {};
                 this.unloadDevices.push(id);
                 this.devicesID[id] = element;
                 this.load[id] = false;
                 this.loadname[id] = "Unknown";
-                this.log.info("INFO: " + id);
+                this.log.info("DEVICE ID: " + id);
                 this.setState("info.connection", false, true);
                 if (element.ip == "") {
                     this.log.warn("Please enter an IP.");
-                    break;
+                    continue;
                 }
                 if (element.port === 0) {
                     this.log.warn("Please enter an Port. Set port default 80");
@@ -132,7 +137,7 @@ class E2Openwebif extends utils.Adapter {
                 }
                 const data = {};
                 if (element.user != "" && element.password != "") {
-                    this.log.info("Use password and username.");
+                    this.log.info("Use password and username for device " + id + ".");
                     data.withCredentials = true;
                     data.auth = {
                         username: element.user,
@@ -170,9 +175,11 @@ class E2Openwebif extends utils.Adapter {
                     this.log.info(`Device ${element.ip} start offline...`);
                     await this.setStateAsync(`${id}.remote.STATUS_FROM_DEVICE`, {
                         val: this.isOnline[id],
-                        ack: false
+                        ack: true
                     });
-                    break;
+                    this.subscribeStates(`${id}.remote.*`);
+                    this.setNewInterval(deepInterval, id);
+                    continue;
                 }
                 if (this.isOnline[id] === 0 && typeof check_folder === "object") {
                     this.subscribeStates(`${id}.remote.*`);
@@ -181,46 +188,42 @@ class E2Openwebif extends utils.Adapter {
                         val: this.isOnline[id],
                         ack: false
                     });
-                    break;
+                    this.subscribeStates(`${id}.remote.*`);
+                    this.setNewInterval(standbyInterval, id);
+                    continue;
                 }
                 if (this.isOnline[id] === 2) {
-                    this.log.info(`
-                    Your device with IP ${element.ip}:${element.port} is unreachable. 
-                    Please check your Instance configuration and restart your adapter.
-                `);
-                    break;
+                    this.log.info(
+                        "Your device with IP "
+                        + element.ip + ":"
+                        + element.port
+                        + " is unreachable. Please check your Instance configuration and restart your adapter.");
+                    continue;
                 }
-                const powerstate = await this.getRequest(cs.API.powerstate, id);
-                this.log.debug("powerstate: " + JSON.stringify(powerstate));
-                if (powerstate && powerstate.instandby) {
-                    this.log.info(`
-                    Your device with IP ${element.ip}:${element.port} is in standby. 
-                    Please wakeup your device and restart your adapter.
-                `);
-                    break;
-                }
-                if (powerstate && powerstate.instandby === false) {
+                if (this.isOnline[id] === 1) {
                     const deviceInfo = await this.getRequest(cs.API.deviceinfo, id);
                     if (deviceInfo == null && !deviceInfo.boxtype) {
                         this.log.warn(`Connected to ${element.ip} device failed`);
-                        break;
+                        this.subscribeStates(`${id}.remote.*`);
+                        continue;
                     }
-                    this.log.info(`Create DeviceInfos`);
+                    this.log.info(`Create DeviceInfos for device ${id}.`);
                     await this.createDeviceInfo(id, deviceInfo.boxtype, deviceInfo);
-                    this.log.info(`Create Remote Folder`);
+                    this.log.info(`Create Remote Folder for device ${id}.`);
                     await this.createRemote(id, deviceInfo);
                     const statusInfo = await this.getRequest(cs.API.getcurrent, id);
                     if (!statusInfo || statusInfo.info == null) {
                         this.log.warn(`Cannot find Status from ${element.ip} device`);
-                        return;
+                        this.subscribeStates(`${id}.remote.*`);
+                        continue;
                     }
-                    this.log.info(`Create StatusInfos`);
+                    this.log.info(`Create StatusInfos for device ${id}.`);
                     await this.createStatusInfo(id, statusInfo);
                     const bouquets = await this.getRequest(cs.API.bouquets, id);
                     if (!bouquets || !bouquets["bouquets"]) {
                         this.log.warn(`Cannot find Bouquets from ${element.ip} device`);
                     } else {
-                        this.log.info(`Create Bouquets and EPG`);
+                        this.log.info(`Create Bouquets and EPG for device ${id}.`);
                         await this.createBouquetsAndEPG(id, bouquets);
                     }
                     if (element.sshuser != "" && element.sshpassword != "") {
@@ -228,7 +231,7 @@ class E2Openwebif extends utils.Adapter {
                     }
                 }
                 this.subscribeStates(`${id}.remote.*`);
-                this.log.info(`Start Interval with ${this.config.interval} seconds...`);
+                this.log.info(`Start Interval with ${this.config.interval} seconds for device ${id}...`);
                 this.checkDevice(id);
             }
         } catch (e) {
@@ -238,68 +241,51 @@ class E2Openwebif extends utils.Adapter {
 
     async checkDevice(id) {
         try {
-            if (this.isSame[id] != this.isOnline[id]) {
-                this.isSame[id] = this.isOnline[id];
-                this.log.debug("indexOf: " + JSON.stringify(this.isOnline).indexOf(":1"));
-                this.log.debug("indexOf: " + JSON.stringify(this.isOnline));
-                if (JSON.stringify(this.isOnline).indexOf(":1") > 0) {
-                    this.setState("info.connection", true, true);
-                } else {
-                    this.setState("info.connection", false, true);
-                }
+            const connection = await this.getStateAsync("info.connection");
+            if (
+                JSON.stringify(this.isOnline).match(/:1/ig) != null &&
+                connection &&
+                connection.val === false
+            ) {
+                this.setState("info.connection", true, true);
+            } else if (
+                JSON.stringify(this.isOnline).match(/:1/ig) == null &&
+                connection &&
+                connection.val === true
+            ) {
+                this.setState("info.connection", false, true);
+            }
+            const STATUS_DEVICE = await this.getStateAsync(`${id}.STATUS_DEVICE`);
+            if (STATUS_DEVICE != this.isOnline[id]) {
                 this.setState(`${id}.STATUS_DEVICE`, {
                     val: this.isOnline[id],
                     ack: true
                 });
-                if (this.isOnline[id] === 0) {
-                    this.setState(`${id}.remote.STATUS_FROM_DEVICE`, {
-                        val: this.isOnline[id],
-                        ack: true
-                    });
-                }
+            }
+            const STATUS_FROM_DEVICE = await this.getStateAsync(`${id}.remote.STATUS_FROM_DEVICE`);
+            if (STATUS_FROM_DEVICE != this.isOnline[id]) {
+                this.setState(`${id}.remote.STATUS_FROM_DEVICE`, {
+                    val: this.isOnline[id],
+                    ack: true
+                });
             }
             if (this.isOnline[id] === 1) {
-                if (!this.offlineInterval[id]) {
-                    this.setNewInterval(this.config.interval, true, id);
+                if (this.currentInterval[id] != this.config.interval) {
+                    this.setNewInterval(this.config.interval, id);
                 }
                 if (this.recordInterval[id] == null) {
-                    this.recordInterval[id] = setInterval(async () => {
-                        this.log.debug(`Check record device ${id}`);
+                    this.recordInterval[id] = this.setInterval(async () => {
+                        this.log.debug(`Start check record device ${id}`);
                         this.checkRecording(id);
-                    }, 60 * 1000);
+                    }, recordInterval * 1000);
                 }
             } else if (this.isOnline[id] === 0) {
-                this.isOnline[id]  = await this.pingDevice(this.devicesID[id].ip, this.devicesID[id].port, id);
-                const powerstate = await this.getRequest(cs.API.powerstate, id);
-                if (powerstate) {
-                    if (powerstate && powerstate.instandby) {
-                        this.isOnline[id] = 0;
-                        this.offlineInterval[id] && clearInterval(this.offlineInterval[id]);
-                        this.offlineInterval[id] = null;
-                        this.recordInterval[id] && clearInterval(this.recordInterval[id]);
-                        this.recordInterval[id] = null;
-                        this.setNewInterval(this.config.interval, false, id);
-                    } else {
-                        this.isOnline[id] = 1;
-                        if (!this.updateInterval[id]) {
-                            this.setNewInterval(60, false, id);
-                        }
-                    }
-                } else {
-                    this.isOnline[id] = 2;
-                    this.offlineInterval[id] && clearInterval(this.offlineInterval[id]);
-                    this.offlineInterval[id] = null;
-                    this.recordInterval[id] && clearInterval(this.recordInterval[id]);
-                    this.recordInterval[id] = null;
-                    if (!this.updateInterval[id]) {
-                        this.setNewInterval(60, false, id);
-                    }
+                if (this.currentInterval[id] != standbyInterval) {
+                    this.setNewInterval(standbyInterval, id);
                 }
             } else {
-                this.offlineInterval[id] && clearInterval(this.offlineInterval[id]);
-                this.offlineInterval[id] = null;
-                if (!this.updateInterval[id]) {
-                    this.setNewInterval(60, false, id);
+                if (this.currentInterval[id] != deepInterval) {
+                    this.setNewInterval(deepInterval, id);
                 }
             }
         } catch (e) {
@@ -307,20 +293,15 @@ class E2Openwebif extends utils.Adapter {
         }
     }
 
-    setNewInterval(times, val, id) {
-        this.updateInterval[id] && clearInterval(this.updateInterval[id]);
-        this.updateInterval[id] = null;
-        this.setState(`${id}.CURRENT_INTERVAL`, {
-            val: times,
-            ack: true
-        });
-        if (val) {
-            this.offlineInterval[id] = setInterval(async () => {
-                this.log.debug(`Check device standby`);
-                this.updateDevice(id);
-            }, times * 1000);
-        } else {
-            this.updateInterval[id] = setInterval(async () => {
+    async setNewInterval(times, id) {
+        if (this.currentInterval[id] != times) {
+            this.currentInterval[id] = times;
+            await this.deleteInterval(id, false, true);
+            this.setState(`${id}.CURRENT_INTERVAL`, {
+                val: times,
+                ack: true
+            });
+            this.updateInterval[id] = this.setInterval(async () => {
                 this.log.debug(`Check device deepstandby ${id}`);
                 if (this.isOnline[id] === 2) {
                     this.checkdeepstandby(id);
@@ -335,10 +316,6 @@ class E2Openwebif extends utils.Adapter {
         try {
             this.isOnline[id]  = await this.pingDevice(this.devicesID[id].ip, this.devicesID[id].port, id);
             if (this.isOnline[id] != 2) {
-                this.updateInterval[id] && clearInterval(this.updateInterval[id]);
-                this.updateInterval[id] = null;
-                this.offlineInterval[id] && clearInterval(this.offlineInterval[id]);
-                this.offlineInterval[id] = null;
                 this.checkDevice(id);
             }
         } catch (e) {
@@ -396,27 +373,39 @@ class E2Openwebif extends utils.Adapter {
                 this.checkDevice(id);
                 return;
             }
+            if (!powerstate.instandby && this.isOnline[id] != 1) {
+                this.log.debug(`Device ${id} is online.`);
+                this.isOnline[id] = 1;
+                if (this.currentInterval[id] != this.config.interval) {
+                    this.log.debug(`Device ${id} is online. Set default interval`);
+                    this.setNewInterval(this.config.interval, id);
+                }
+            }
             const getcurrent = await this.getRequest(cs.API.getcurrent, id);
             if (!getcurrent || getcurrent.info == null) {
-                this.log.warn(`Cannot find Status from ${this.devicesID[id].ip} device`);
+                this.log.warn(`Cannot find Infos from ${this.devicesID[id].ip} device`);
                 return;
             }
             this.inProgress(true, "updateDevice", id);
-            const picon = "http://" +
-            this.devicesID[id].ip
-            + ":" +
-            this.devicesID[id].port
-            + "/picon/" +
-            getcurrent.now.sref.replace(/:/g, "_").slice(0, -1)
-            + ".png";
-            this.setState(`${id}.statusInfo.next.picon`, {
-                val: picon,
-                ack: true
-            });
-            this.setState(`${id}.statusInfo.now.picon`, {
-                val: picon,
-                ack: true
-            });
+            const iconcheck = getcurrent.now.sref.replace(/:/g, "_").slice(0, -1);
+            if (this.checkPicon[id] != iconcheck) {
+                this.checkPicon[id] = iconcheck;
+                const picon = "http://" +
+                    this.devicesID[id].ip
+                    + ":" +
+                    this.devicesID[id].port
+                    + "/picon/" +
+                    iconcheck
+                    + ".png";
+                this.setState(`${id}.statusInfo.next.picon`, {
+                    val: picon,
+                    ack: true
+                });
+                this.setState(`${id}.statusInfo.now.picon`, {
+                    val: picon,
+                    ack: true
+                });
+            }
             if (getcurrent.next && getcurrent.next.remaining) {
                 this.setState(`${id}.statusInfo.next.remaining_time`, {
                     val: (await this.convertRemaining(getcurrent.next.remaining)).toString(),
@@ -446,24 +435,19 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
             const tunersignal = await this.getRequest(cs.API.tunersignal, id);
-            if (tunersignal && tunersignal.tunernumber != null) {
-                if (tunersignal.snr_db && typeof tunersignal.snr_db === "number") {
-                    getcurrent.tunerinfo = tunersignal;
-                }
+            if (Object.keys(this.checkCurrent[id]).length == 0) {
+                this.checkCurrent[id] = getcurrent;
             }
-            this.log.debug("INFO getcurrent: " + JSON.stringify(getcurrent));
-            this.log.debug("INFO tunersignal: " + JSON.stringify(tunersignal));
-            if (
-                getcurrent.info &&
-                getcurrent.info.pmtpid &&
-                typeof getcurrent.info.pmtpid === "number"
-            ) {
-                await this.json2iob.parse(`${id}.statusInfo`, getcurrent, {
-                    forceIndex: true,
-                    preferedArrayName: null,
-                    channelName: null,
-                });
-            }
+            getcurrent.tunerinfo = tunersignal;
+            this.checkCurrent[id].tunerinfo = tunersignal;
+            //this.log.debug("getcurrent + tunerinfo: " + JSON.stringify(getcurrent));
+            await this.json2iob.parse(`${id}.statusInfo`, getcurrent, {
+                forceIndex: true,
+                preferedArrayName: null,
+                channelName: null,
+            }, this.checkCurrent[id], true);
+            this.checkCurrent[id] = getcurrent;
+            this.checkCurrent[id].tunerinfo = tunersignal;
             this.inProgress(false, "Unknown", id);
         } catch (e) {
             this.sendLucky(e, "try updateDevice");
@@ -496,11 +480,11 @@ class E2Openwebif extends utils.Adapter {
     }
 
     getRequest(path, id) {
-        this.log.debug("Request: " + path);
+        //this.log.debug("Request: " + path);
         try {
             return this.axiosInstance[id](path)
                 .then((response) => {
-                    this.log.debug(JSON.stringify(response.data));
+                    //this.log.debug(JSON.stringify(response.data));
                     this.isOnline[id] = 1;
                     return response.data;
                 })
@@ -524,11 +508,11 @@ class E2Openwebif extends utils.Adapter {
     onUnload(callback) {
         try {
             for (const id of this.unloadDevices) {
-                this.updateInterval[id] && clearInterval(this.updateInterval[id]);
-                this.offlineInterval[id] && clearInterval(this.offlineInterval[id]);
-                this.messageInterval[id] && clearInterval(this.messageInterval[id]);
-                this.recordInterval[id] && clearInterval(this.recordInterval[id]);
+                this.updateInterval[id] && this.clearInterval(this.updateInterval[id]);
+                this.messageInterval[id] && this.clearInterval(this.messageInterval[id]);
+                this.recordInterval[id] && this.clearInterval(this.recordInterval[id]);
             }
+            sleepTimer && this.clearTimeout(sleepTimer);
             callback();
         } catch (e) {
             this.sendLucky(e, "try onUnload");
@@ -563,7 +547,6 @@ class E2Openwebif extends utils.Adapter {
                     return;
                 }
                 if (command === "STATUS_FROM_DEVICE" && state.val === 1) {
-                    this.isOnline[deviceId] = Number(state.val);
                     this.changeStatus(state, id, deviceId);
                     return;
                 }
@@ -624,7 +607,6 @@ class E2Openwebif extends utils.Adapter {
                         this.sentRequest(state, id, deviceId);
                         break;
                     case "STATUS_FROM_DEVICE":
-                        this.isOnline[deviceId] = Number(state.val);
                         this.changeStatus(state, id, deviceId);
                         break;
                     case "SET_VOLUME":
@@ -961,7 +943,7 @@ class E2Openwebif extends utils.Adapter {
                             forceIndex: true,
                             preferedArrayName: null,
                             channelName: null,
-                        });
+                        }, timer_json, false);
                     }
                     this.log.debug("timer_json: " + JSON.stringify(timer_json));
                 } else {
@@ -1080,7 +1062,7 @@ class E2Openwebif extends utils.Adapter {
                         forceIndex: true,
                         preferedArrayName: null,
                         channelName: null,
-                    });
+                    }, rec.native.epg[state.val], false);
                 }
             }
             this.inProgress(false, "Unknown", deviceId);
@@ -1154,29 +1136,19 @@ class E2Openwebif extends utils.Adapter {
         try {
             if (state && state.val === 2) {
                 this.log.debug(`Set Status deepstandby. Change interval to 60 min.`);
-                this.updateInterval[deviceId] && clearInterval(this.updateInterval[deviceId]);
-                this.offlineInterval[deviceId] && clearInterval(this.offlineInterval[deviceId]);
-                this.recordInterval[id] && clearInterval(this.recordInterval[id]);
-                this.recordInterval[id] = null;
-                this.updateInterval[deviceId] = null;
-                this.offlineInterval[deviceId] = null;
                 this.isOnline[deviceId] = 2;
-                this.isSame[deviceId] = 4;
-                this.setNewInterval(3600, false, deviceId);
+                await this.deleteInterval(id, true, false);
+                this.setNewInterval(deepInterval, deviceId);
+                this.setState(`${deviceId}.STATUS_DEVICE`, {
+                    val: this.isOnline[deviceId],
+                    ack: true
+                });
             } else if (state && state.val === 1) {
                 this.log.debug(`Set Status online. Change interval to ${this.config.interval} sec.`);
-                this.updateInterval[deviceId] && clearInterval(this.updateInterval[deviceId]);
-                this.offlineInterval[deviceId] && clearInterval(this.offlineInterval[deviceId]);
-                this.updateInterval[deviceId] = null;
-                this.offlineInterval[deviceId] = null;
-                this.isOnline[deviceId] = 1;
-                this.isSame[deviceId] = 4;
-                this.setNewInterval(this.config.interval, true, deviceId);
+                await this.sleep(this.config.boottime * 1000);
+                this.checkdeepstandby(deviceId);
             }
-            this.setState(id, {
-                val: this.isOnline[deviceId],
-                ack: true
-            });
+            this.setAckFlag(id, {result: true});
         } catch (e) {
             this.sendLucky(e, "try changeStatus");
         }
@@ -1255,7 +1227,7 @@ class E2Openwebif extends utils.Adapter {
             if (return_message && return_message.result && send_type.val == 0) {
                 const res = await this.getRequest(`${cs.PATH.COMMAND}108`, deviceId);
                 this.log.debug("command 108: " + JSON.stringify(res));
-                this.messageInterval[deviceId] = setInterval(async () => {
+                this.messageInterval[deviceId] = this.setInterval(async () => {
                     this.answerMessage(deviceId);
                 }, (Number(send_timeout.val) + 1) * 1000);
             }
@@ -1268,7 +1240,7 @@ class E2Openwebif extends utils.Adapter {
 
     async answerMessage(deviceId) {
         try {
-            this.messageInterval[deviceId] && clearInterval(this.messageInterval[deviceId]);
+            this.messageInterval[deviceId] && this.clearInterval(this.messageInterval[deviceId]);
             const answer_message = await this.getRequest(`${cs.PATH.MESSAGEANSWER}`, deviceId);
             this.log.debug("answer_message: " + JSON.stringify(answer_message));
             if (answer_message && answer_message.result != null) {
@@ -1453,15 +1425,15 @@ class E2Openwebif extends utils.Adapter {
             const ssh2 = new SSH2Promise(sshconfig2);
             await ssh2.connect().then(async () => {
                 try {
-                    this.log.info("Connection established");
+                    this.log.info(`Connection established for device ${deviceId}.`);
                     let resp = "";
                     resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh");
                     resp = resp.replace(/(\r\n|\r|\n)/g, "");
                     data = data.toString().replace(/<device>/g, scriptname);
-                    this.log.debug(`Replace ${data}`);
-                    this.log.debug(`Response ${resp}`);
+                    this.log.debug(`Replace ${data} device ${deviceId}`);
+                    this.log.debug(`Response ${resp} device ${deviceId}`);
                     if (resp === "iobroker" && this.devicesID[deviceId].ssh) {
-                        this.log.info(`Set true`);
+                        this.log.debug(`Set SSH_CREATED true for device ${deviceId}`);
                         this.setState(`${deviceId}.SSH_CREATED`, {
                             val: true,
                             ack: true
@@ -1472,9 +1444,9 @@ class E2Openwebif extends utils.Adapter {
                             resp = await this.commandToSSH2(ssh2, "chmod 775 /home/" + scriptname + ".sh");
                             resp = resp.replace(/(\r\n|\r|\n)/g, "");
                             if (resp === "OK") {
-                                this.log.info("Set chmod 775 for /home/" + scriptname + ".sh");
+                                this.log.info(`Set chmod 775 for /home/${scriptname}.sh`);
                             } else {
-                                this.log.info("Error set chmod 775: " + resp);
+                                this.log.info(`Error set chmod 775: ${resp}`);
                                 ssh2.close();
                                 return;
                             }
@@ -1482,13 +1454,13 @@ class E2Openwebif extends utils.Adapter {
                         resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh 1 " + get_url);
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
-                            this.log.info("Create files and symlinks");
+                            this.log.info(`Create files and symlinks for device ${deviceId}`);
                             this.setState(`${deviceId}.SSH_CREATED`, {
                                 val: true,
                                 ack: true
                             });
                         } else {
-                            this.log.info("Error create files and symlinks: " + resp);
+                            this.log.info(`Error create files and symlinks: ${resp} for device ${deviceId}`);
                             ssh2.close();
                             return;
                         }
@@ -1496,27 +1468,27 @@ class E2Openwebif extends utils.Adapter {
                         resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh 2");
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
-                            this.log.info("Delete files and symlinks");
+                            this.log.info(`Delete files and symlinks for device ${deviceId}`);
                         } else {
-                            this.log.info("Error delete files and symlinks: " + resp);
+                            this.log.info(`Error delete files and symlinks: ${resp} for device ${deviceId}`);
                             ssh2.close();
                             return;
                         }
                         resp = await this.commandToSSH2(ssh2, "rm /home/" + scriptname + ".sh 2");
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
-                            this.log.info("Delete /home/" + scriptname + ".sh");
+                            this.log.info(`Delete /home/${scriptname}.sh for device ${deviceId}`);
                             this.setState(`${deviceId}.SSH_CREATED`, {
                                 val: false,
                                 ack: true
                             });
                         } else {
-                            this.log.info("Error delete /home/" + scriptname + ".sh: " + resp);
+                            this.log.info(`Error delete /home/${scriptname}.sh: - ${resp} for device ${deviceId}`);
                             ssh2.close();
                             return;
                         }
                     } else {
-                        this.log.info(`Set false`);
+                        this.log.info(`Set false for device ${deviceId}`);
                         this.setState(`${deviceId}.SSH_CREATED`, {
                             val: false,
                             ack: true
@@ -1691,6 +1663,7 @@ class E2Openwebif extends utils.Adapter {
     async setAckFlag(id, res) {
         try {
             if (id && res && res.result) {
+                this.log.debug("Set ack=True: " + id);
                 this.setState(`${id}`, {
                     ack: true
                 });
@@ -1709,6 +1682,24 @@ class E2Openwebif extends utils.Adapter {
         }
         return result;
     }
+
+    sleep(ms) {
+        return new Promise((resolve) => {
+            sleepTimer = setTimeout(resolve, ms);
+        });
+    }
+
+    async deleteInterval(deviceId, rec, upd) {
+        if (upd) {
+            this.updateInterval[deviceId] && this.clearInterval(this.updateInterval[deviceId]);
+            this.updateInterval[deviceId] = null;
+        }
+        if (rec) {
+            this.recordInterval[deviceId] && this.clearInterval(this.recordInterval[deviceId]);
+            this.recordInterval[deviceId] = null;
+        }
+    }
+
 }
 if (require.main !== module) {
     // Export the constructor in compact mode

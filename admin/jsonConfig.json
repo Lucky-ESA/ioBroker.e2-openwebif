@@ -60,6 +60,7 @@
                             "title": "PASSWORD",
                             "tooltip": "Password",
                             "filter": false,
+                            "visible": true,
                             "sort": false,
                             "default": ""
                         },
@@ -100,6 +101,7 @@
                             "title": "SSHPASSWORD",
                             "tooltip": "SSHPassword",
                             "filter": false,
+                            "visible": true,
                             "sort": false,
                             "default": ""
                         },
@@ -139,6 +141,16 @@
                     "sm": 3,
                     "label": "Your IP",
                     "default": ""
+                },
+                "boottime": {
+                    "type": "number",
+                    "newLine": true,
+                    "sm": 3,
+                    "label": "BOOTTIME",
+                    "default": 20,
+                    "min": 0,
+                    "max": 120,
+                    "step": 1
                 },
                 "simple_api": {
                     "newLine": true,

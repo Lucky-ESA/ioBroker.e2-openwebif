@@ -57,10 +57,11 @@
     "YOUR MAC": "Twój MAC",
     "Activate": "Aktywuj/dezaktywuj urządzenie",
     "Activ": "Aktywny",
-    "sshUser": "Użytkownik SSH",
+    "sshUser": "SSH User",
     "SSHUser": "Użytkownik SSH (domyślny root)",
     "SSHPASSWORD": "Hasło SSH",
     "SSHPassword": "Hasło SSH",
     "snapshot": "Tekst Alexa dla SNAPSHOT",
-    "snapshot_osd": "Tekst Alexa dla SNAPSHOT-OSD"
+    "snapshot_osd": "Tekst Alexa dla SNAPSHOT-OSD",
+    "BOOTTIME": "Czas uruchamiania twojego urządzenia z trybu głębokiego czuwania"
 }

@@ -62,5 +62,6 @@
     "SSHPASSWORD": "Password SSH",
     "SSHPassword": "Password SSH",
     "snapshot": "Testo Alexa per SNAPSHOT",
-    "snapshot_osd": "Testo Alexa per SNAPSHOT-OSD"
+    "snapshot_osd": "Testo Alexa per SNAPSHOT-OSD",
+    "BOOTTIME": "Tempo di avvio della tua casella da deep-standby"
 }

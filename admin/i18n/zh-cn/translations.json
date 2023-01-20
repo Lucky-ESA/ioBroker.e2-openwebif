@@ -62,5 +62,6 @@
     "SSHPASSWORD": "SSH密码",
     "SSHPassword": "SSH密码",
     "snapshot": "SNAPSHOT 的 Alexa 文本",
-    "snapshot_osd": "用于 SNAPSHOT-OSD 的 Alexa 文本"
+    "snapshot_osd": "用于 SNAPSHOT-OSD 的 Alexa 文本",
+    "BOOTTIME": "你的盒子从深度待机启动的时间"
 }

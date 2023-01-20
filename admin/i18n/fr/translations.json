@@ -62,5 +62,6 @@
     "SSHPASSWORD": "Mot de passe SSH",
     "SSHPassword": "Mot de passe SSH",
     "snapshot": "Texte Alexa pour SNAPSHOT",
-    "snapshot_osd": "Texte Alexa pour SNAPSHOT-OSD"
+    "snapshot_osd": "Texte Alexa pour SNAPSHOT-OSD",
+    "BOOTTIME": "Temps de démarrage de votre box depuis la veille profonde"
 }

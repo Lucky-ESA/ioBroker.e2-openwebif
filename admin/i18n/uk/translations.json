@@ -62,5 +62,6 @@
     "SSHPASSWORD": "Пароль SSH",
     "SSHPassword": "Пароль SSH",
     "snapshot": "Текст Alexa для SNAPSHOT",
-    "snapshot_osd": "Текст Alexa для SNAPSHOT-OSD"
+    "snapshot_osd": "Текст Alexa для SNAPSHOT-OSD",
+    "BOOTTIME": "Час завантаження вашого боксу з режиму глибокого очікування"
 }

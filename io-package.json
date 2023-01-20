@@ -68,6 +68,7 @@
         "loglevel": "info",
         "mode": "daemon",
         "type": "multimedia",
+        "messagebox": false,
         "compact": true,
         "connectionType": "local",
         "dataSource": "poll",
@@ -86,10 +87,12 @@
         ]
     },
     "encryptedNative": [
-        "password"
+        "password",
+        "sshpassword"
     ],
     "protectedNative": [
-        "password"
+        "password",
+        "sshpassword"
     ],
     "native": {
         "devices": [
@@ -100,11 +103,11 @@
                 "user": "root",
                 "password": "",
                 "https": false,
-                "ssh": true,
+                "ssh": false,
                 "sshuser": "root",
                 "sshpassword": "",
                 "mac": ""
-              }
+            }
         ],
         "interval": 5,
         "your_ip": "",
@@ -112,6 +115,7 @@
         "lucky": false,
         "errorinfo": "Error after start",
         "alexa": false,
+        "boottime": 20,
         "text": {
             "KEY_VOLUMEDOWN": "",
             "KEY_VOLUMEUP": "",

@@ -62,5 +62,6 @@
     "SSHPASSWORD": "SSH Password",
     "SSHPassword": "SSH Password",
     "snapshot": "Alexa text for SNAPSHOT",
-    "snapshot_osd": "Alexa text for SNAPSHOT-OSD"
+    "snapshot_osd": "Alexa text for SNAPSHOT-OSD",
+    "BOOTTIME": "Boot time of your box from deep-standby"
 }

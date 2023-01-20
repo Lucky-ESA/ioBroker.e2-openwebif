@@ -62,5 +62,6 @@
     "SSHPASSWORD": "Senha SSH",
     "SSHPassword": "Senha SSH",
     "snapshot": "Texto Alexa para SNAPSHOT",
-    "snapshot_osd": "Texto Alexa para SNAPSHOT-OSD"
+    "snapshot_osd": "Texto Alexa para SNAPSHOT-OSD",
+    "BOOTTIME": "Tempo de inicialização da sua caixa do modo de espera profunda"
 }
