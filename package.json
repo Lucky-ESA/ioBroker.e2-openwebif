@@ -28,8 +28,9 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^2.6.7",
-    "wol": "^1.0.7",
-    "ssh2-promise": "^1.0.3"
+    "@types/wol": "^1.0.1",
+    "ssh2-promise": "^1.0.3",
+    "wol": "^1.0.7"
   },
   "devDependencies": {
     "@alcalzone/release-script": "^3.5.9",

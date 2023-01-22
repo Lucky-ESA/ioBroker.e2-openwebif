@@ -65,6 +65,7 @@ class E2Openwebif extends utils.Adapter {
         this.isOnline = {};
         this.currentInterval = {};
         this.folderstates = {};
+        this.webif = {};
         this.unloadDevices = [];
         this.counter = 1;
         this.load = {};
@@ -114,7 +115,7 @@ class E2Openwebif extends utils.Adapter {
                 if (!element.activ) {
                     break;
                 }
-                this.log.info("Language: " + this.lang);
+                this.log.debug("Language: " + this.lang);
                 const id = element.ip.replace(/[.\s]+/g, "_");
                 element.password = this.decrypt(element.password.split("<LUCKY-ESA>")[1]);
                 element.sshpassword = this.decrypt(element.sshpassword.split("<LUCKY-ESA>")[1]);
@@ -122,6 +123,7 @@ class E2Openwebif extends utils.Adapter {
                 this.updateInterval[id] = null;
                 this.recordInterval[id] = null;
                 this.messageInterval[id] = null;
+                this.webif[id] = false;
                 this.checkPicon[id] = {};
                 this.checkCurrent[id] = {};
                 this.unloadDevices.push(id);
@@ -174,6 +176,7 @@ class E2Openwebif extends utils.Adapter {
                     this.namespace + "." + id + ".STATUS_DEVICE",
                 );
                 if (this.isOnline[id] === 2 && typeof check_folder === "object") {
+                    this.setWebIf(id);
                     this.subscribeStates(`${id}.remote.*`);
                     this.log.info(`Device ${element.ip} start offline...`);
                     await this.setStateAsync(`${id}.remote.STATUS_FROM_DEVICE`, {
@@ -184,6 +187,7 @@ class E2Openwebif extends utils.Adapter {
                     continue;
                 }
                 if (this.isOnline[id] === 0 && typeof check_folder === "object") {
+                    this.setWebIf(id);
                     this.subscribeStates(`${id}.remote.*`);
                     this.log.info(`Device ${element.ip} start in standby...`);
                     await this.setStateAsync(`${id}.remote.STATUS_FROM_DEVICE`, {
@@ -204,6 +208,7 @@ class E2Openwebif extends utils.Adapter {
                 if (this.isOnline[id] === 1) {
                     const deviceInfo = await this.getRequest(cs.API.deviceinfo, id);
                     if (deviceInfo == null && !deviceInfo.boxtype) {
+                        this.setWebIf(id);
                         this.log.warn(`Connected to ${element.ip} device failed`);
                         this.subscribeStates(`${id}.remote.*`);
                         continue;
@@ -214,6 +219,7 @@ class E2Openwebif extends utils.Adapter {
                     await this.createRemote(id, deviceInfo);
                     const statusInfo = await this.getRequest(cs.API.getcurrent, id);
                     if (!statusInfo || statusInfo.info == null) {
+                        this.setWebIf(id);
                         this.log.warn(`Cannot find Status from ${element.ip} device`);
                         this.subscribeStates(`${id}.remote.*`);
                         continue;
@@ -231,15 +237,27 @@ class E2Openwebif extends utils.Adapter {
                         await this.connect_ssh(id);
                     }
                 }
+                this.setWebIf(id);
                 this.subscribeStates(`${id}.remote.*`);
                 this.log.info(`Start Interval with ${this.config.interval} seconds for device ${id}...`);
                 this.checkDevice(id);
-                this.qualityInterval = this.setInterval(() => {
-                    this.cleanupQuality();
-                }, 60 * 60 * 24 * 1000);
             }
+            this.qualityInterval = this.setInterval(() => {
+                this.cleanupQuality();
+            }, 60 * 60 * 24 * 1000);
         } catch (e) {
             this.sendLucky(e, "try onReady");
+        }
+    }
+
+    async setWebIf(id) {
+        const readwebif = await this.getStateAsync(`${id}.deviceInfo.webifver`);
+        if (
+            readwebif &&
+            readwebif.val != null &&
+            (readwebif.val).toString().match(/wif/ig) != null
+        ) {
+            this.webif[id] = true;
         }
     }
 
@@ -1405,7 +1423,16 @@ class E2Openwebif extends utils.Adapter {
                 return;
             }
             const get_url = `http://${this.config.your_ip}:${port}/set/${this.namespace}.${deviceId}.remote.STATUS_FROM_DEVICE?value=`;
-            const sshconfig2 = {
+            if (
+                this.devicesID[deviceId] == null ||
+                this.devicesID[deviceId].ip == "" ||
+                this.devicesID[deviceId].sshuser == ""
+            ) {
+                this.log.info("Missing IP or Username!");
+                return;
+            }
+            const sshconfig2 = {};
+            sshconfig2[deviceId] = {
                 host: this.devicesID[deviceId].ip,
                 username: this.devicesID[deviceId].sshuser,
                 password: this.devicesID[deviceId].sshpassword
@@ -1439,12 +1466,13 @@ class E2Openwebif extends utils.Adapter {
                 this.log.info(`Cannot create filename`);
                 return;
             }
-            const ssh2 = new SSH2Promise(sshconfig2);
-            await ssh2.connect().then(async () => {
+            const ssh2 = {};
+            ssh2[deviceId] = new SSH2Promise(sshconfig2[deviceId]);
+            await ssh2[deviceId].connect().then(async () => {
                 try {
                     this.log.info(`Connection established for device ${deviceId}.`);
                     let resp = "";
-                    resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh");
+                    resp = await this.commandToSSH2(ssh2[deviceId], "/home/" + scriptname + ".sh");
                     resp = resp.replace(/(\r\n|\r|\n)/g, "");
                     data = data.toString().replace(/<device>/g, scriptname);
                     //this.log.debug(`Replace ${data} device ${deviceId}`);
@@ -1457,8 +1485,8 @@ class E2Openwebif extends utils.Adapter {
                         });
                     } else if (resp != "iobroker" && this.devicesID[deviceId].ssh) {
                         if (resp != "iobroker missing") {
-                            resp = await this.commandToSSH2(ssh2, `echo '${data}' > /home/${scriptname}.sh`);
-                            resp = await this.commandToSSH2(ssh2, "chmod 775 /home/" + scriptname + ".sh");
+                            resp = await this.commandToSSH2(ssh2[deviceId], `echo '${data}' > /home/${scriptname}.sh`);
+                            resp = await this.commandToSSH2(ssh2[deviceId], "chmod 775 /home/" + scriptname + ".sh");
                             resp = resp.replace(/(\r\n|\r|\n)/g, "");
                             if (resp === "OK") {
                                 this.log.info(`Set chmod 775 for /home/${scriptname}.sh`);
@@ -1468,7 +1496,7 @@ class E2Openwebif extends utils.Adapter {
                                 return;
                             }
                         }
-                        resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh 1 " + get_url);
+                        resp = await this.commandToSSH2(ssh2[deviceId], "/home/" + scriptname + ".sh 1 " + get_url);
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
                             this.log.info(`Create files and symlinks for device ${deviceId}`);
@@ -1482,7 +1510,7 @@ class E2Openwebif extends utils.Adapter {
                             return;
                         }
                     } else if (resp == "iobroker" && !this.devicesID[deviceId].ssh) {
-                        resp = await this.commandToSSH2(ssh2, "/home/" + scriptname + ".sh 2");
+                        resp = await this.commandToSSH2(ssh2[deviceId], "/home/" + scriptname + ".sh 2");
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
                             this.log.info(`Delete files and symlinks for device ${deviceId}`);
@@ -1491,7 +1519,7 @@ class E2Openwebif extends utils.Adapter {
                             ssh2.close();
                             return;
                         }
-                        resp = await this.commandToSSH2(ssh2, "rm /home/" + scriptname + ".sh 2");
+                        resp = await this.commandToSSH2(ssh2[deviceId], "rm /home/" + scriptname + ".sh 2");
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
                             this.log.info(`Delete /home/${scriptname}.sh for device ${deviceId}`);
@@ -1501,7 +1529,7 @@ class E2Openwebif extends utils.Adapter {
                             });
                         } else {
                             this.log.info(`Error delete /home/${scriptname}.sh: - ${resp} for device ${deviceId}`);
-                            ssh2.close();
+                            ssh2[deviceId].close();
                             return;
                         }
                     } else {
@@ -1515,7 +1543,7 @@ class E2Openwebif extends utils.Adapter {
                     this.sendLucky(e, "try connect_ssh connect");
                 }
             });
-            ssh2.close();
+            ssh2[deviceId].close();
         } catch (e) {
             this.sendLucky(e, "try connect_ssh");
         }
