@@ -71,7 +71,6 @@ class E2Openwebif extends utils.Adapter {
         this.load = {};
         this.loadname = {};
         this.checkPicon = {};
-        this.checkCurrent = {};
         this.lang = "de";
     }
 
@@ -125,7 +124,6 @@ class E2Openwebif extends utils.Adapter {
                 this.messageInterval[id] = null;
                 this.webif[id] = false;
                 this.checkPicon[id] = {};
-                this.checkCurrent[id] = {};
                 this.unloadDevices.push(id);
                 this.devicesID[id] = element;
                 this.load[id] = false;
@@ -242,6 +240,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log.info(`Start Interval with ${this.config.interval} seconds for device ${id}...`);
                 this.checkDevice(id);
             }
+            this.cleanupQuality();
             this.qualityInterval = this.setInterval(() => {
                 this.cleanupQuality();
             }, 60 * 60 * 24 * 1000);
@@ -451,19 +450,18 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
             const tunersignal = await this.getRequest(cs.API.tunersignal, id);
-            if (Object.keys(this.checkCurrent[id]).length == 0) {
-                this.checkCurrent[id] = getcurrent;
+            if (tunersignal) {
+                getcurrent.tunerinfo = tunersignal;
             }
-            getcurrent.tunerinfo = tunersignal;
-            this.checkCurrent[id].tunerinfo = tunersignal;
             this.log.debug(`getcurrent + tunerinfo: ${JSON.stringify(getcurrent)}`);
             await this.json2iob.parse(`${id}.statusInfo`, getcurrent, {
                 forceIndex: true,
                 preferedArrayName: null,
                 channelName: null,
-            }, this.checkCurrent[id], true);
-            this.checkCurrent[id] = getcurrent;
-            this.checkCurrent[id].tunerinfo = tunersignal;
+                autoCast: true,
+                checkvalue: false,
+                checkType: true,
+            });
             this.inProgress(false, "Unknown", id);
         } catch (e) {
             this.sendLucky(e, "try updateDevice");
@@ -965,7 +963,10 @@ class E2Openwebif extends utils.Adapter {
                             forceIndex: true,
                             preferedArrayName: null,
                             channelName: null,
-                        }, timer_json, false);
+                            autoCast: true,
+                            checkvalue: true,
+                            checkType: true,
+                        });
                     }
                     this.log.debug(`timer_json: ${JSON.stringify(timer_json)}`);
                 } else {
@@ -1089,7 +1090,10 @@ class E2Openwebif extends utils.Adapter {
                         forceIndex: true,
                         preferedArrayName: null,
                         channelName: null,
-                    }, rec.native.epg[state.val], false);
+                        autoCast: true,
+                        checkvalue: false,
+                        checkType: true,
+                    });
                 }
             }
             this.inProgress(false, "Unknown", deviceId);

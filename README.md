@@ -17,6 +17,7 @@ Remote control for your Enigma2 Receivers.
 ## Requirements
 * Openwebif must be installed
 * Adapter simple-api
+* Hijack and Token must be disabled
 
 ## Requirements optionale
 * SSH access must be activated
