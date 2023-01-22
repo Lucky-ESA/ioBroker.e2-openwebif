@@ -22,9 +22,9 @@ const https       = require("https");
 
 const httpsAgent  = new https.Agent({
     rejectUnauthorized: false
-//    cert: fs.readFileSync('./lib/boxcert.cer'),
-//    key: fs.readFileSync('./lib/client.key'),
-//    ca: fs.readFileSync('./lib/boxcert.cer'),
+//    cert: fs.readFileSync("./lib/boxcert.cer"),
+//    key: fs.readFileSync("./lib/client.key"),
+//    ca: fs.readFileSync("./lib/boxcert.cer"),
 });
 const standbyInterval = 60;
 const deepInterval = 3600;
@@ -91,10 +91,10 @@ class E2Openwebif extends utils.Adapter {
             ) {
                 for (const pw of adapterconfigs.native.devices) {
                     if (pw.password != "" && pw.password.match(/<LUCKY-ESA>/ig) === null) {
-                        pw.password = "<LUCKY-ESA>" + this.encrypt(pw.password);
+                        pw.password = `<LUCKY-ESA>${this.encrypt(pw.password)}`;
                         isdecode = true;
                     } else if (pw.sshpassword != "" && pw.sshpassword.match(/<LUCKY-ESA>/ig) === null) {
-                        pw.sshpassword = "<LUCKY-ESA>" + this.encrypt(pw.sshpassword);
+                        pw.sshpassword = `<LUCKY-ESA>${this.encrypt(pw.sshpassword)}`;
                         isdecode = true;
                     }
                 }
@@ -115,7 +115,7 @@ class E2Openwebif extends utils.Adapter {
                 if (!element.activ) {
                     break;
                 }
-                this.log.debug("Language: " + this.lang);
+                this.log.debug(`Language: ${this.lang}`);
                 const id = element.ip.replace(/[.\s]+/g, "_");
                 element.password = this.decrypt(element.password.split("<LUCKY-ESA>")[1]);
                 element.sshpassword = this.decrypt(element.sshpassword.split("<LUCKY-ESA>")[1]);
@@ -130,7 +130,7 @@ class E2Openwebif extends utils.Adapter {
                 this.devicesID[id] = element;
                 this.load[id] = false;
                 this.loadname[id] = "Unknown";
-                this.log.info("DEVICE ID: " + id);
+                this.log.info(`DEVICE ID: ${id}`);
                 this.setState("info.connection", false, true);
                 if (element.ip == "") {
                     this.log.warn("Please enter an IP.");
@@ -142,7 +142,7 @@ class E2Openwebif extends utils.Adapter {
                 }
                 const data = {};
                 if (element.user != "" && element.password != "") {
-                    this.log.info("Use password and username for device " + id + ".");
+                    this.log.info(`Use password and username for device ${id}.`);
                     data.withCredentials = true;
                     data.auth = {
                         username: element.user,
@@ -173,7 +173,7 @@ class E2Openwebif extends utils.Adapter {
                 });
                 this.isOnline[id]  = await this.pingDevice(element.ip, element.port, id);
                 const check_folder = await this.getObjectAsync(
-                    this.namespace + "." + id + ".STATUS_DEVICE",
+                    `${this.namespace}.${id}.STATUS_DEVICE`,
                 );
                 if (this.isOnline[id] === 2 && typeof check_folder === "object") {
                     this.setWebIf(id);
@@ -368,7 +368,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log.debug("Offline");
                 socket.destroy();
                 if (reject) {
-                    this.log.debug("reject: " + reject + " device: " + id);
+                    this.log.debug(`reject: ${reject} device: ${id}`);
                 }
                 resolve(2);
             });
@@ -378,11 +378,11 @@ class E2Openwebif extends utils.Adapter {
     async updateDevice(id) {
         try{
             if (this.load[id]) {
-                this.log.debug("in Process: " + this.loadname[id]);
+                this.log.debug(`in Process: ${this.loadname[id]}`);
                 return;
             }
             const powerstate = await this.getRequest(cs.API.powerstate, id);
-            this.log.debug("INFO powerstate: " + JSON.stringify(powerstate));
+            this.log.debug(`INFO powerstate: ${JSON.stringify(powerstate)}`);
             if (!powerstate) {
                 this.log.debug(`Device ${id} is offline`);
                 this.isOnline[id] = 2;
@@ -412,13 +412,7 @@ class E2Openwebif extends utils.Adapter {
             const iconcheck = getcurrent.now.sref.replace(/:/g, "_").slice(0, -1);
             if (this.checkPicon[id] != iconcheck) {
                 this.checkPicon[id] = iconcheck;
-                const picon = "http://" +
-                    this.devicesID[id].ip
-                    + ":" +
-                    this.devicesID[id].port
-                    + "/picon/" +
-                    iconcheck
-                    + ".png";
+                const picon = `http://${this.devicesID[id].ip}:${this.devicesID[id].port}/picon/${iconcheck}.png`;
                 this.setState(`${id}.statusInfo.next.picon`, {
                     val: picon,
                     ack: true
@@ -462,7 +456,7 @@ class E2Openwebif extends utils.Adapter {
             }
             getcurrent.tunerinfo = tunersignal;
             this.checkCurrent[id].tunerinfo = tunersignal;
-            //this.log.debug("getcurrent + tunerinfo: " + JSON.stringify(getcurrent));
+            this.log.debug(`getcurrent + tunerinfo: ${JSON.stringify(getcurrent)}`);
             await this.json2iob.parse(`${id}.statusInfo`, getcurrent, {
                 forceIndex: true,
                 preferedArrayName: null,
@@ -490,11 +484,9 @@ class E2Openwebif extends utils.Adapter {
                 return ("0" + seconds).slice(-2);
             }
             if (hours === 0) {
-                return ("0" + minutes).slice(-2) + ":" + ("0" + seconds).slice(-2);
+                return `${("0" + minutes).slice(-2)}:"${("0" + seconds).slice(-2)}`;
             }
-            return ("0" + hours).slice(-2) + ":" +
-            ("0" + minutes).slice(-2) + ":" +
-            ("0" + seconds).slice(-2);
+            return `${("0" + hours).slice(-2)}:${("0" + minutes).slice(-2)}:${("0" + seconds).slice(-2)}`;
         } catch (e) {
             this.sendLucky(e, "try convertRemaining");
             return "0";
@@ -502,18 +494,18 @@ class E2Openwebif extends utils.Adapter {
     }
 
     getRequest(path, id) {
-        //this.log.debug("Request: " + path);
+        this.log.debug(`Request: ${path}`);
         try {
             return this.axiosInstance[id](encodeURI(path))
                 .then((response) => {
-                    //this.log.debug(JSON.stringify(response.data));
+                    this.log.debug(`Response: ${JSON.stringify(response.data)}`);
                     this.isOnline[id] = 1;
                     return response.data;
                 })
                 .catch((error) => {
                     this.isOnline[id] = 2;
-                    this.log.debug("getRequest: " + error);
-                    error.response && this.log.debug("Request: " + JSON.stringify(error.response.data));
+                    this.log.debug(`getRequest: ${error}`);
+                    error.response && this.log.debug(`Request: ${JSON.stringify(error.response.data)}`);
                     this.inProgress(false, "Unknown", id);
                     return false;
                 });
@@ -545,9 +537,9 @@ class E2Openwebif extends utils.Adapter {
 
     async sendCommand(path, id, deviceid) {
         try {
-            this.log.debug("path: " + path);
+            this.log.debug(`path: ${path}`);
             const res = await this.getRequest(path, deviceid);
-            this.log.debug("response sendCommand: " + JSON.stringify(res));
+            this.log.debug(`response sendCommand: ${JSON.stringify(res)}`);
             if (id) this.setAckFlag(id, res, {val: false});
         } catch (e) {
             this.sendLucky(e, "try sendCommand");
@@ -697,9 +689,9 @@ class E2Openwebif extends utils.Adapter {
         try {
             if (state.val === "delete") {
                 //start cleanup img/ folder and datapoints
-                const admin_path = __dirname + "/../../iobroker-data/files/e2-openwebif.admin/";
-                const file_data = admin_path + "_data.json";
-                const files = fs.readdirSync(admin_path + "img/");
+                const admin_path = `${__dirname}/../../iobroker-data/files/e2-openwebif.admin/`;
+                const file_data = `${admin_path}_data.json`;
+                const files = fs.readdirSync(`${admin_path}img/`);
                 let files_arr = [];
                 if (files.toString() != "") {
                     files_arr = files.toString().split(",");
@@ -708,10 +700,10 @@ class E2Openwebif extends utils.Adapter {
                     startkey: `${this.namespace}.${deviceId}.remote.snapshot.pictures.`,
                     endkey: `${this.namespace}.${deviceId}.remote.snapshot.pictures.\u9999`
                 });
-                this.log.debug("all_dp: " + JSON.stringify(all_dp));
+                this.log.debug(`all_dp: ${JSON.stringify(all_dp)}`);
                 if (all_dp && all_dp.rows) {
                     for (const element of all_dp.rows) {
-                        this.log.debug("element: " + JSON.stringify(element));
+                        this.log.debug(`element: ${JSON.stringify(element)}`);
                         if (
                             element &&
                             element.value &&
@@ -722,14 +714,14 @@ class E2Openwebif extends utils.Adapter {
                             element.value.native.picname!= ""
                         ) {
                             if (files_arr.includes(element.value.native.picname)) {
-                                this.log.debug("Found file: " + element.value.native.picname);
+                                this.log.debug(`Found file: ${element.value.native.picname}`);
                             } else {
-                                this.log.debug("Cannot found file: " + element.value.native.picname);
+                                this.log.debug(`Cannot found file: ${element.value.native.picname}`);
                                 await this.delObjectAsync(id);
-                                this.log.info("Delete datapoint: " + id);
+                                this.log.info(`Delete datapoint: ${id}`);
                             }
                         } else {
-                            this.log.debug("Cannot found file name: " + element.id);
+                            this.log.debug(`Cannot found file name: ${element.id}`);
                         }
                     }
                 } else {
@@ -739,20 +731,20 @@ class E2Openwebif extends utils.Adapter {
                 if (fs.existsSync(file_data)) {
                     data = fs.readFileSync(file_data);
                     data = JSON.parse(data.toString("utf8"));
-                    this.log.debug("Data: " + JSON.stringify(data));
+                    this.log.debug(`Data: ${JSON.stringify(data)}`);
                 }
-                this.log.debug("Files: " + files);
+                this.log.debug(`Files: ${files}`);
                 files.forEach(async (file) => {
                     try {
-                        if (data && data["img/" + file]) {
-                            this.log.info("Found file in iobroker database: " + file);
+                        if (data && data[`img/${file}`]) {
+                            this.log.info(`Found file in iobroker database: ${file}`);
                         } else {
-                            this.log.info("Cannot found file in iobroker database! An attempt is made to delete the file: " + file);
-                            await this.delFileAsync("e2-openwebif.admin", "img/" + file, async (error) => {
+                            this.log.info(`Cannot found file in iobroker database! An attempt is made to delete the file: ${file}`);
+                            await this.delFileAsync("e2-openwebif.admin", `img/${file}`, (error) => {
                                 if (!error) {
-                                    this.log.info("File deleted: img/" + file);
+                                    this.log.info(`File deleted: img/${file}`);
                                 } else {
-                                    this.log.warn("File not deleted:: img/" + file);
+                                    this.log.warn(`File not deleted: img/${file}`);
                                 }
                             });
                         }
@@ -762,28 +754,28 @@ class E2Openwebif extends utils.Adapter {
                 });
                 //end cleanup img/ folder and datapoints
                 const obj = await this.getObjectAsync(id);
-                this.log.debug("deletesnapshot obj: " + JSON.stringify(obj));
+                this.log.debug(`deletesnapshot obj: ${JSON.stringify(obj)}`);
                 if (obj && obj.native && obj.native.img && obj.native.img != "") {
                     if (fs.existsSync(admin_path + obj.native.img)) {
                         await this.delFileAsync("e2-openwebif.admin", obj.native.img, async (error) => {
                             if (!error) {
-                                this.log.info("File deleted: " + obj.native.img);
+                                this.log.info(`File deleted: ${obj.native.img}`);
                                 try {
                                     await this.delObjectAsync(id);
-                                    this.log.info("Delete datapoint: " + id);
+                                    this.log.info(`Delete datapoint: ${id}`);
                                     this.setAckFlag(id, {result: true});
                                 } catch (e) {
-                                    this.log.info("Error delete datapoint: " + e);
+                                    this.log.info(`Error delete datapoint: ${e}`);
                                 }
                             } else {
-                                this.log.warn("File not deleted:: " + obj.native.img);
+                                this.log.warn(`File not deleted: ${obj.native.img}`);
                             }
                         });
                     } else {
-                        this.log.info("Cannot find the file: " + id);
+                        this.log.info(`Cannot find the file: ${id}`);
                     }
                 } else {
-                    this.log.info("Cannot find the file name: " + id);
+                    this.log.info(`Cannot find the file name: ${id}`);
                 }
             }
         } catch (e) {
@@ -820,21 +812,21 @@ class E2Openwebif extends utils.Adapter {
                         const writer = fs.createWriteStream("/tmp/image.jpg");
                         response.data.pipe(writer);
                         return new Promise((resolve, reject) => {
-                            this.log.debug(`Start Promise`);
-                            writer.on('finish', async () => {
-                                this.log.debug(`Finish`);
+                            this.log.debug("Start Promise");
+                            writer.on("finish", async () => {
+                                this.log.debug("Finish");
                                 if (fs.existsSync("/tmp/image.jpg")) {
-                                    const pic = fs.readFileSync('/tmp/image.jpg');
+                                    const pic = fs.readFileSync("/tmp/image.jpg");
                                     const current_time = Date.now();
-                                    const picname = "screenshot_" + current_time + ".jpg";
-                                    const picpath = "img/" + picname;
+                                    const picname = `screenshot_${current_time}.jpg`;
+                                    const picpath = `img/${picname}`;
                                     const address = `http://${this.config.your_ip}/e2-openwebif.admin/${picpath}`;
                                     this.log.debug(`picpath: ${picpath}`);
                                     this.log.debug(`address: ${address}`);
                                     await this.writeFileAsync("e2-openwebif.admin", picpath, pic, async (error) => {
                                         try {
                                             if(!error) {
-                                                this.log.debug(`OK`);
+                                                this.log.debug("OK");
                                                 const states = {};
                                                 states["states"] = {};
                                                 states["states"][address] = address;
@@ -862,7 +854,7 @@ class E2Openwebif extends utils.Adapter {
                                                 });
                                                 resolve(true);
                                             } else {
-                                                this.log.debug(`NOK`);
+                                                this.log.debug("NOK");
                                                 reject(error);
                                             }
                                         } catch (e) {
@@ -874,7 +866,7 @@ class E2Openwebif extends utils.Adapter {
                                     reject("Cannot create /tmp/image.jpg");
                                 }
                             });
-                            writer.on('error', (error) => {
+                            writer.on("error", (error) => {
                                 reject(error);
                             });
                         });
@@ -885,14 +877,14 @@ class E2Openwebif extends utils.Adapter {
                 });
             this.log.debug(`res: ${res}`);
             if (res) {
-                this.log.info(`Create Screenshot`);
+                this.log.info("Create Screenshot");
                 if (command === "snapshot" || command === "snapshot_osd") {
                     this.setAckFlag(id, {result: true}, {val: false});
                 } else {
                     this.setAckFlag(id, {result: true});
                 }
             } else {
-                this.log.info(`Cannot create Screenshot`);
+                this.log.info("Cannot create Screenshot");
             }
         } catch (e) {
             this.sendLucky(e, "try createsnapshot");
@@ -910,11 +902,11 @@ class E2Openwebif extends utils.Adapter {
                     this.setAckFlag(id, cleanup, {val: false});
                 }
                 if (cleanup && cleanup.result) {
-                    this.log.info(`Cleanup timerlist`);
+                    this.log.info("Cleanup timerlist");
                     await this.delObjectAsync(`${deviceId}.remote.timerlist.timer`, { recursive: true });
                     await this.createTimerFolder(deviceId);
                 } else {
-                    this.log.info(`Cannot cleanup timerlist`);
+                    this.log.info("Cannot cleanup timerlist");
                 }
             } else if (command === "LOAD_TIMERLIST") {
                 const timer = await this.getRequest(cs.SET.timerlist, deviceId);
@@ -925,14 +917,14 @@ class E2Openwebif extends utils.Adapter {
                     for (const element of timer.timers) {
                         new_states[`${element.serviceref}.${element.begin}.${element.end}.${element.eit}`] = element.name;
                     }
-                    this.log.debug("new_states: " + JSON.stringify(new_states));
+                    this.log.debug(`new_states: ${JSON.stringify(new_states)}`);
                     await this.statesLoadTimer(deviceId, new_states);
                     this.setState(`${deviceId}.remote.timerlist.JSON_TIMERLIST`, {
                         val: JSON.stringify(timer.timers),
                         ack: true
                     });
                 } else {
-                    this.log.info(`Cannot Create Select Timerlist`);
+                    this.log.info("Cannot Create Select Timerlist");
                 }
             } else if (command === "DELETE_SELECT_TIMERS") {
                 const set_timer = await this.getStateAsync(`${deviceId}.remote.timerlist.SET_TIMER`);
@@ -944,7 +936,7 @@ class E2Openwebif extends utils.Adapter {
                     if (arr != null && Object.keys(arr).length == 4) {
                         del = await this.getRequest(`${cs.PATH.TIMERDELETE}${arr[0]}&begin=${arr[1]}&end=${arr[2]}`, deviceId);
                     }
-                    this.log.debug("new_states: " + JSON.stringify(del));
+                    this.log.debug(`new_states: ${JSON.stringify(del)}`);
                     this.log.debug(`${cs.PATH.TIMERDELETE}${arr[0]}&begin=${arr[1]}&end=${arr[2]}`);
                     if (del && del.result) {
                         this.log.info(`Delete ${set_timer.val}`);
@@ -955,7 +947,7 @@ class E2Openwebif extends utils.Adapter {
                         this.log.info(`Cannot delete ${set_timer.val}`);
                     }
                 } else {
-                    this.log.info(`Timerlist is empty`);
+                    this.log.info("Timerlist is empty");
                 }
             } else if (command === "SET_TIMER") {
                 const arr = state.val.split(".");
@@ -975,7 +967,7 @@ class E2Openwebif extends utils.Adapter {
                             channelName: null,
                         }, timer_json, false);
                     }
-                    this.log.debug("timer_json: " + JSON.stringify(timer_json));
+                    this.log.debug(`timer_json: ${JSON.stringify(timer_json)}`);
                 } else {
                     this.log.info(`Cannot read Timerlist for ${deviceId}`);
                 }
@@ -995,7 +987,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log.warn(`Cannot find Bouquets from ${this.devicesID[deviceId].ip} device`);
             } else {
                 this.setAckFlag(id, {result: true}, {val: false});
-                this.log.info(`Create Bouquets and EPG`);
+                this.log.info("Create Bouquets and EPG");
                 await this.loadBouquets(deviceId, bouquets);
                 this.setState(`${deviceId}.remote.bouquets.JSON_BOUQUETS`, {
                     val: JSON.stringify(bouquets["bouquets"]),
@@ -1015,12 +1007,12 @@ class E2Openwebif extends utils.Adapter {
                 if (state.val == 0 || (state.val > 0 && state.val < 101))  {
                     const vol = await this.getRequest(`${cs.PATH.SETVOLUME}${state.val}`, deviceId);
                     this.setAckFlag(id, vol);
-                    this.log.debug("vol: " + JSON.stringify(vol));
+                    this.log.debug(`vol: ${JSON.stringify(vol)}`);
                 } else {
                     this.log.info(`Cannot set Volumen: ${state.val} for ${deviceId}`);
                 }
             } else {
-                this.log.info(`Cannot set Volumen`);
+                this.log.info("Cannot set Volumen");
             }
         } catch (e) {
             this.sendLucky(e, "try setVolumen");
@@ -1037,7 +1029,7 @@ class E2Openwebif extends utils.Adapter {
                     } else {
                         this.setAckFlag(id, power, {val: false});
                     }
-                    this.log.debug("power: " + JSON.stringify(power));
+                    this.log.debug(`power: ${JSON.stringify(power)}`);
                 } else if (state.val === 6) {
                     state.val = true;
                     this.wakeonlan(state, id, deviceId);
@@ -1046,7 +1038,7 @@ class E2Openwebif extends utils.Adapter {
                     this.log.info(`Cannot set Powerstate: ${state.val}`);
                 }
             } else {
-                this.log.info(`Cannot set Powerstate`);
+                this.log.info("Cannot set Powerstate");
             }
         } catch (e) {
             this.sendLucky(e, "try setPowerStates");
@@ -1071,7 +1063,7 @@ class E2Openwebif extends utils.Adapter {
                 }
                 const setRec = await this.getRequest(`${cs.SET.timeraddbyeventid}?sRef=${sRef.val}&eventid=${eventid.val}`, deviceId);
                 this.setAckFlag(id, setRec, {val: false});
-                this.log.debug("setRec: " + JSON.stringify(setRec));
+                this.log.debug(`setRec: ${JSON.stringify(setRec)}`);
                 this.setState(`${deviceId}.remote.epg.RECORDING_RESPONSE`, {
                     val: JSON.stringify(setRec),
                     ack: true
@@ -1088,11 +1080,11 @@ class E2Openwebif extends utils.Adapter {
         try {
             await this.inProgress(true, "setRecordingEPG", deviceId);
             if (state && state.val != "") {
-                this.log.debug("state.val: " + JSON.stringify(state.val));
+                this.log.debug(`state.val: ${JSON.stringify(state.val)}`);
                 const rec = await this.getObjectAsync(`${this.namespace}.${deviceId}.remote.epg.SET_EPG_RECORDING`);
                 this.setAckFlag(id, rec);
                 if (rec && rec.native && rec.native.epg && rec.native.epg[state.val]) {
-                    this.log.debug("rec.native.epg: " + JSON.stringify(rec.native.epg));
+                    this.log.debug(`rec.native.epg: ${JSON.stringify(rec.native.epg)}`);
                     this.json2iob.parse(`${deviceId}.remote.epg.channel`, rec.native.epg[state.val], {
                         forceIndex: true,
                         preferedArrayName: null,
@@ -1120,12 +1112,12 @@ class E2Openwebif extends utils.Adapter {
                     if (!channel) {
                         return;
                     }
-                    this.log.debug("epgservice.events: " + JSON.stringify(epgservice.events));
+                    this.log.debug(`epgservice.events: ${JSON.stringify(epgservice.events)}`);
                     for (const element of epgservice.events) {
-                        new_states[val_arr] = element.begin + " - " + element.sname + " " + element.title;
+                        new_states[val_arr] = `${element.begin} - ${element.sname} ${element.title}`;
                         ++val_arr;
                     }
-                    this.log.debug("new_states: " + JSON.stringify(new_states));
+                    this.log.debug(`new_states: ${JSON.stringify(new_states)}`);
                     if (channel && channel.common && channel.common.states) {
                         delete channel.common.states;
                     }
@@ -1220,7 +1212,7 @@ class E2Openwebif extends utils.Adapter {
             if (state && state.val) {
                 const resp = await this.getRequest(state.val, deviceId);
                 this.setAckFlag(id, resp);
-                this.log.debug(JSON.stringify(resp));
+                this.log.debug(`Response your Request: ${JSON.stringify(resp)}`);
                 this.setState(`${deviceId}.remote.control.response`, {
                     val: JSON.stringify(resp),
                     ack: true
@@ -1255,13 +1247,13 @@ class E2Openwebif extends utils.Adapter {
                 this.log.info("Cannot find timeout!");
                 return;
             }
-            const path = "?text=" + send_message.val + "&type=" + send_type.val + "&timeout=" + send_timeout.val;
+            const path = `?text=${send_message.val}&type=${send_type.val}&timeout=${send_timeout.val}`;
             const return_message = await this.getRequest(`${cs.SET.message}${path}`, deviceId);
             this.setAckFlag(id, return_message, {val: false});
-            this.log.info("return_message: " + JSON.stringify(return_message));
+            this.log.info(`return_message: ${JSON.stringify(return_message)}`);
             if (return_message && return_message.result && send_type.val == 0) {
                 const res = await this.getRequest(`${cs.PATH.COMMAND}108`, deviceId);
-                this.log.debug("command 108: " + JSON.stringify(res));
+                this.log.debug(`command 108: ${JSON.stringify(res)}`);
                 this.messageInterval[deviceId] = this.setInterval(async () => {
                     this.answerMessage(deviceId);
                 }, (Number(send_timeout.val) + 1) * 1000);
@@ -1277,7 +1269,7 @@ class E2Openwebif extends utils.Adapter {
         try {
             this.messageInterval[deviceId] && this.clearInterval(this.messageInterval[deviceId]);
             const answer_message = await this.getRequest(`${cs.PATH.MESSAGEANSWER}`, deviceId);
-            this.log.debug("answer_message: " + JSON.stringify(answer_message));
+            this.log.debug(`answer_message: ${JSON.stringify(answer_message)}`);
             if (answer_message && answer_message.result != null) {
                 if (!answer_message.result) {
                     this.sendCommand(`${cs.PATH["COMMAND"]}${cs.KEYIDS["KEY_EXIT"]}`, deviceId);
@@ -1304,10 +1296,10 @@ class E2Openwebif extends utils.Adapter {
                 for (const element of getlocations.locations) {
                     if (!this.folderstates[element]) {
                         await this.createFolderJson(element, deviceId);
-                        this.log.debug("PFAD: " + element);
+                        this.log.debug(`PFAD: ${element}`);
                     }
                 }
-                this.log.debug("this.folderstate: " + JSON.stringify(this.folderstates));
+                this.log.debug(`this.folderstate: ${JSON.stringify(this.folderstates)}`);
                 if (this.folderstates) {
                     await this.statesSetFolder(deviceId, this.folderstates);
                     this.setAckFlag(id, getlocations, {val: false});
@@ -1322,10 +1314,10 @@ class E2Openwebif extends utils.Adapter {
 
     async setZAPAndEPG(state, val, id, deviceId) {
         try {
-            this.log.debug("state.val: " + state.val);
+            this.log.debug(`state.val: ${state.val}`);
             const ZAPandEPG = await this.getRequest(`${cs.SET[val]}${encodeURI(state.val)}`, deviceId);
             this.setAckFlag(id, ZAPandEPG);
-            this.log.debug("ZAPandEPG: " + JSON.stringify(ZAPandEPG));
+            this.log.debug(`ZAPandEPG: ${JSON.stringify(ZAPandEPG)}`);
             if (val === "epgbouquet" && ZAPandEPG && ZAPandEPG.events) {
                 this.setState(`${deviceId}.remote.epg.EPG_JSON`, {
                     val: JSON.stringify(ZAPandEPG),
@@ -1333,13 +1325,13 @@ class E2Openwebif extends utils.Adapter {
                 });
                 const new_states = {};
                 const channel = await this.getObjectAsync(`${this.namespace}.${deviceId}.remote.epg.SET_EPG_CHANNEL`);
-                this.log.debug("ZAPandEPG event: " + JSON.stringify(ZAPandEPG.events));
+                this.log.debug(`ZAPandEPG event: ${JSON.stringify(ZAPandEPG.events)}`);
                 for (const element of ZAPandEPG.events) {
                     if (element && element.sname && new_states[element.sref] == null) {
                         new_states[element.sref] = element.sname;
                     }
                 }
-                this.log.debug("new_states: " + JSON.stringify(new_states));
+                this.log.debug(`new_states: ${JSON.stringify(new_states)}`);
                 if (channel && channel.common && channel.common.states) {
                     delete channel.common.states;
                 }
@@ -1359,7 +1351,7 @@ class E2Openwebif extends utils.Adapter {
                 const getservices = await this.getRequest(`${cs.SET.getservices}${encodeURI(state.val)}`, deviceId);
                 this.setAckFlag(id, getservices);
                 if (getservices && getservices.services) {
-                    this.log.debug("getservices: " + JSON.stringify(getservices));
+                    this.log.debug(`getservices: ${JSON.stringify(getservices)}`);
                     const new_states = {};
                     const channel = await this.getObjectAsync(`${this.namespace}.${deviceId}.remote.${dp}`);
                     for (const element of getservices.services) {
@@ -1406,7 +1398,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log.info("Please select simple-api in your config!");
                 return;
             }
-            const simple_api = await this.getForeignObjectAsync("system.adapter." + this.config.simple_api);
+            const simple_api = await this.getForeignObjectAsync(`system.adapter.${this.config.simple_api}`);
             let port = 8087;
             if (
                 !simple_api ||
@@ -1437,12 +1429,12 @@ class E2Openwebif extends utils.Adapter {
                 username: this.devicesID[deviceId].sshuser,
                 password: this.devicesID[deviceId].sshpassword
             };
-            const boxfile = this.adapterDir + "/lib/iobroker.sh";
+            const boxfile = `${this.adapterDir}/lib/iobroker.sh`;
             let data;
             if (fs.existsSync(boxfile)) {
                 try {
                     data = fs.readFileSync(boxfile);
-                    //this.log.debug(`Data: ${data}`);
+                    this.log.debug(`Data: ${data}`);
                 } catch (e) {
                     this.log.info(`Cannot read file "${boxfile}": ${e}`);
                     this.sendLucky(e, "try connect_ssh existsSync");
@@ -1455,7 +1447,7 @@ class E2Openwebif extends utils.Adapter {
             let scriptname;
             const random = await this.getStateAsync(`${deviceId}.SSH_SCRIPTNAME`);
             if (random && random.val == "") {
-                scriptname = deviceId + "_" + await this.makeRandomString(5);
+                scriptname = `${deviceId}_${await this.makeRandomString(5)}`;
                 this.setState(`${deviceId}.SSH_SCRIPTNAME`, {
                     val: scriptname,
                     ack: true
@@ -1472,11 +1464,11 @@ class E2Openwebif extends utils.Adapter {
                 try {
                     this.log.info(`Connection established for device ${deviceId}.`);
                     let resp = "";
-                    resp = await this.commandToSSH2(ssh2[deviceId], "/home/" + scriptname + ".sh");
+                    resp = await this.commandToSSH2(ssh2[deviceId], `/home/${scriptname}.sh`);
                     resp = resp.replace(/(\r\n|\r|\n)/g, "");
                     data = data.toString().replace(/<device>/g, scriptname);
-                    //this.log.debug(`Replace ${data} device ${deviceId}`);
-                    //this.log.debug(`Response ${resp} device ${deviceId}`);
+                    this.log.debug(`Replace ${data} device ${deviceId}`);
+                    this.log.debug(`Response ${resp} device ${deviceId}`);
                     if (resp === "iobroker" && this.devicesID[deviceId].ssh) {
                         this.log.debug(`Set SSH_CREATED true for device ${deviceId}`);
                         this.setState(`${deviceId}.SSH_CREATED`, {
@@ -1485,8 +1477,8 @@ class E2Openwebif extends utils.Adapter {
                         });
                     } else if (resp != "iobroker" && this.devicesID[deviceId].ssh) {
                         if (resp != "iobroker missing") {
-                            resp = await this.commandToSSH2(ssh2[deviceId], `echo '${data}' > /home/${scriptname}.sh`);
-                            resp = await this.commandToSSH2(ssh2[deviceId], "chmod 775 /home/" + scriptname + ".sh");
+                            resp = await this.commandToSSH2(ssh2[deviceId], `echo "${data}" > /home/${scriptname}.sh`);
+                            resp = await this.commandToSSH2(ssh2[deviceId], `chmod 775 /home/${scriptname}.sh`);
                             resp = resp.replace(/(\r\n|\r|\n)/g, "");
                             if (resp === "OK") {
                                 this.log.info(`Set chmod 775 for /home/${scriptname}.sh`);
@@ -1496,7 +1488,7 @@ class E2Openwebif extends utils.Adapter {
                                 return;
                             }
                         }
-                        resp = await this.commandToSSH2(ssh2[deviceId], "/home/" + scriptname + ".sh 1 " + get_url);
+                        resp = await this.commandToSSH2(ssh2[deviceId], `/home/${scriptname}.sh 1 ${get_url}`);
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
                             this.log.info(`Create files and symlinks for device ${deviceId}`);
@@ -1510,7 +1502,7 @@ class E2Openwebif extends utils.Adapter {
                             return;
                         }
                     } else if (resp == "iobroker" && !this.devicesID[deviceId].ssh) {
-                        resp = await this.commandToSSH2(ssh2[deviceId], "/home/" + scriptname + ".sh 2");
+                        resp = await this.commandToSSH2(ssh2[deviceId], `/home/${scriptname}.sh 2`);
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
                             this.log.info(`Delete files and symlinks for device ${deviceId}`);
@@ -1519,7 +1511,7 @@ class E2Openwebif extends utils.Adapter {
                             ssh2.close();
                             return;
                         }
-                        resp = await this.commandToSSH2(ssh2[deviceId], "rm /home/" + scriptname + ".sh 2");
+                        resp = await this.commandToSSH2(ssh2[deviceId], `rm /home/${scriptname}.sh 2`);
                         resp = resp.replace(/(\r\n|\r|\n)/g, "");
                         if (resp === "OK") {
                             this.log.info(`Delete /home/${scriptname}.sh for device ${deviceId}`);
@@ -1583,7 +1575,7 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async commandToSSH2(ssh2, command) {
-        this.log.debug("commandToSSH2: " + command);
+        this.log.debug(`commandToSSH2: ${command}`);
         try {
             const res = await ssh2.exec(command);
             if (res == "") {
@@ -1659,7 +1651,7 @@ class E2Openwebif extends utils.Adapter {
                     ack: true
                 });
             } else {
-                this.log.info(`Cannot read Timerlist`);
+                this.log.info("Cannot read Timerlist");
             }
         } catch (e) {
             this.sendLucky(e, "try checkRecording");
@@ -1670,8 +1662,8 @@ class E2Openwebif extends utils.Adapter {
         try {
             this.log.warn(`${func}: ${error}`);
             if (this.config.lucky) {
-                const obj = await this.getForeignObjectAsync("system.host." + this.host);
-                const npm = await this.getForeignStateAsync("system.host." + this.host + ".versions.npmCurrent");
+                const obj = await this.getForeignObjectAsync(`system.host.${this.host}`);
+                const npm = await this.getForeignStateAsync(`system.host.${this.host}.versions.npmCurrent`);
                 let npmVal;
                 if (npm && npm.val) {
                     npmVal = npm.val;
@@ -1711,7 +1703,7 @@ class E2Openwebif extends utils.Adapter {
 
     async setAckFlag(id, res, value) {
         try {
-            this.log.debug(`Set ack=True:: ${JSON.stringify(res)}`);
+            this.log.debug(`Set ack=True: ${JSON.stringify(res)}`);
             if (id && res && res.result) {
                 this.setState(id, {
                     ack: true,
@@ -1725,7 +1717,7 @@ class E2Openwebif extends utils.Adapter {
 
     async makeRandomString(length) {
         try {
-            let result           = "";
+            let result             = "";
             const characters       = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             const charactersLength = characters.length;
             for ( let i = 0; i < length; i++ ) {
@@ -1760,7 +1752,7 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async cleanupQuality() {
-        this.log.debug(`Start cleanup quality`);
+        this.log.debug("Start cleanup quality");
         const quality = {
             0:"0x00 - good",
             1:"0x01 - general problem",
@@ -1790,15 +1782,15 @@ class E2Openwebif extends utils.Adapter {
                         if (dp.value.type === "state") {
                             const states = await this.getStateAsync(dp.id);
                             if (states && states.q != null && states.q != 0) {
-                                //this.log.debug(`Datapoints: ${dp.id} - ${JSON.stringify(states)}`);
+                                this.log.debug(`Datapoints: ${dp.id} - ${JSON.stringify(states)}`);
                                 if (quality[states.q]) {
                                     const isfind = dp_array.find((mes) => mes.message === quality[states.q]);
                                     if (isfind) {
-                                        //this.log.debug(`Found: ${JSON.stringify(isfind)}`);
+                                        this.log.debug(`Found: ${JSON.stringify(isfind)}`);
                                         ++isfind.counter;
                                         isfind.dp[isfind.counter] = dp.id;
                                     } else {
-                                        //this.log.debug(`Founds: ${JSON.stringify(isfind)}`);
+                                        this.log.debug(`Founds: ${JSON.stringify(isfind)}`);
                                         const new_array = {
                                             message: quality[states.q],
                                             quality: states.q,
