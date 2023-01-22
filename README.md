@@ -12,7 +12,7 @@
 
 ## e2-openwebif adapter for ioBroker
 
-Remote control fpr your Enigma2 Receiver.
+Remote control for your Enigma2 Receivers.
 
 ## Requirements
 * Openwebif must be installed
@@ -39,7 +39,7 @@ Remote control fpr your Enigma2 Receiver.
 ## License
 MIT License
 
-Copyright (c) 2022 Lucky-ESA <github@luckyskills.de>
+Copyright (c) 2023 Lucky-ESA <github@luckyskills.de>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
