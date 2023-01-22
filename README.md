@@ -12,7 +12,20 @@
 
 ## e2-openwebif adapter for ioBroker
 
-Remote control OpenWebIf
+Remote control fpr your Enigma2 Receiver.
+
+## Requirements
+* Openwebif must be installed
+* Adapter simple-api
+
+## Requirements optionale
+* SSH access must be activated
+* SSH User root
+* SSH Password for root user
+
+## Tested with
+* VU Ultimo with OpenATV 7.2
+* GigaBlue UHD Quad 4K with OpenATV 6.4
 
 ## Changelog
 <!--
