@@ -60,6 +60,7 @@ class E2Openwebif extends utils.Adapter {
         this.updateInterval = {};
         this.recordInterval = {};
         this.messageInterval = {};
+        this.changeProgram = {};
         this.qualityInterval = null;
         this.devicesID = {};
         this.isOnline = {};
@@ -122,6 +123,7 @@ class E2Openwebif extends utils.Adapter {
                 this.updateInterval[id] = null;
                 this.recordInterval[id] = null;
                 this.messageInterval[id] = null;
+                this.changeProgram[id] = null;
                 this.webif[id] = false;
                 this.checkPicon[id] = {};
                 this.unloadDevices.push(id);
@@ -222,6 +224,11 @@ class E2Openwebif extends utils.Adapter {
                         this.subscribeStates(`${id}.remote.*`);
                         continue;
                     }
+                    const tunersignal = await this.getRequest(cs.API.tunersignal, id);
+                    if (tunersignal) {
+                        statusInfo.tunerinfo = tunersignal;
+                        this.log.info(`Create TunerInfos for device ${id}.`);
+                    }
                     this.log.info(`Create StatusInfos for device ${id}.`);
                     await this.createStatusInfo(id, statusInfo);
                     const bouquets = await this.getRequest(cs.API.bouquets, id);
@@ -241,6 +248,7 @@ class E2Openwebif extends utils.Adapter {
                 this.checkDevice(id);
             }
             this.cleanupQuality();
+            this.checkDeviceFolder();
             this.qualityInterval = this.setInterval(() => {
                 this.cleanupQuality();
             }, 60 * 60 * 24 * 1000);
@@ -249,14 +257,50 @@ class E2Openwebif extends utils.Adapter {
         }
     }
 
+    async checkDeviceFolder() {
+        try {
+            const all_dp = await this.getObjectListAsync({
+                startkey: `${this.namespace}`,
+                endkey: `${this.namespace}\u9999`
+            });
+            for (const element of all_dp.rows) {
+                if (
+                    element &&
+                element.value &&
+                element.value.type &&
+                element.value.type === "device"
+                ) {
+                    if (
+                        element.value &&
+                    element.value.common &&
+                    element.value.common.desc
+                    ) {
+                        if (this.unloadDevices.includes(element.value.common.desc)) {
+                            this.log.debug(`all_dp: ${JSON.stringify(element)}`);
+                        } else {
+                            this.log.debug(`DELETE ${element.id}`);
+                            await this.delObjectAsync(`${element.id}`, { recursive: true });
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            this.sendLucky(e, "try checkDeviceFolder");
+        }
+    }
+
     async setWebIf(id) {
-        const readwebif = await this.getStateAsync(`${id}.deviceInfo.webifver`);
-        if (
-            readwebif &&
-            readwebif.val != null &&
-            (readwebif.val).toString().match(/wif/ig) != null
-        ) {
-            this.webif[id] = true;
+        try {
+            const readwebif = await this.getStateAsync(`${id}.deviceInfo.webifver`);
+            if (
+                readwebif &&
+                readwebif.val != null &&
+                (readwebif.val).toString().match(/wif/ig) != null
+            ) {
+                this.webif[id] = true;
+            }
+        } catch (e) {
+            this.sendLucky(e, "try setWebIf");
         }
     }
 
@@ -315,21 +359,25 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async setNewInterval(times, id) {
-        if (this.currentInterval[id] != times) {
-            this.currentInterval[id] = times;
-            await this.deleteInterval(id, false, true);
-            this.setState(`${id}.CURRENT_INTERVAL`, {
-                val: times,
-                ack: true
-            });
-            this.updateInterval[id] = this.setInterval(async () => {
-                this.log.debug(`Check device deepstandby ${id}`);
-                if (this.isOnline[id] === 2) {
-                    this.checkdeepstandby(id);
-                } else {
-                    this.updateDevice(id);
-                }
-            }, times * 1000);
+        try {
+            if (this.currentInterval[id] != times) {
+                this.currentInterval[id] = times;
+                await this.deleteInterval(id, false, true);
+                this.setState(`${id}.CURRENT_INTERVAL`, {
+                    val: times,
+                    ack: true
+                });
+                this.updateInterval[id] = this.setInterval(async () => {
+                    this.log.debug(`Check device deepstandby ${id}`);
+                    if (this.isOnline[id] === 2) {
+                        this.checkdeepstandby(id);
+                    } else {
+                        this.updateDevice(id);
+                    }
+                }, times * 1000);
+            }
+        } catch (e) {
+            this.sendLucky(e, "try setNewInterval");
         }
     }
 
@@ -454,18 +502,46 @@ class E2Openwebif extends utils.Adapter {
                 getcurrent.tunerinfo = tunersignal;
             }
             this.log.debug(`getcurrent + tunerinfo: ${JSON.stringify(getcurrent)}`);
+            if(
+                getcurrent.now &&
+                getcurrent.now.title &&
+                this.changeProgram[id] != getcurrent.now.title
+            ) {
+                this.changeProgram[id] = getcurrent.now.title;
+                this.updateDeviceInfo(id);
+            }
             await this.json2iob.parse(`${id}.statusInfo`, getcurrent, {
                 forceIndex: true,
                 preferedArrayName: null,
                 channelName: null,
                 autoCast: true,
-                checkvalue: false,
+                checkvalue: true,
                 checkType: true,
             });
             this.inProgress(false, "Unknown", id);
         } catch (e) {
             this.sendLucky(e, "try updateDevice");
             this.inProgress(false, "Unknown", id);
+        }
+    }
+
+    async updateDeviceInfo(id) {
+        try {
+            this.log.debug(`Start update deviceInfo ${id}`);
+            const deviceInfo = await this.getRequest(cs.API.deviceinfo, id);
+            if (deviceInfo != null && deviceInfo.boxtype) {
+                this.log.debug(`Update deviceInfo ${id}`);
+                await this.json2iob.parse(`${id}.deviceInfo`, deviceInfo, {
+                    forceIndex: true,
+                    preferedArrayName: null,
+                    channelName: null,
+                    autoCast: true,
+                    checkvalue: true,
+                    checkType: true,
+                });
+            }
+        } catch (e) {
+            this.sendLucky(e, "try updateDeviceInfo");
         }
     }
 
@@ -964,7 +1040,7 @@ class E2Openwebif extends utils.Adapter {
                             preferedArrayName: null,
                             channelName: null,
                             autoCast: true,
-                            checkvalue: true,
+                            checkvalue: false,
                             checkType: true,
                         });
                     }
