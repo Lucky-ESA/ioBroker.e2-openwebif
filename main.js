@@ -16,9 +16,11 @@ const net         = require("net");
 const SSH2Promise = require("ssh2-promise");
 const Json2iob    = require("./lib/json2iob");
 const helper      = require("./lib/helper");
+const tl          = require("./lib/translator.js");
 const cs          = require("./lib/constants");
 const fs          = require("fs");
 const https       = require("https");
+const util        = require("node:util");
 
 const httpsAgent  = new https.Agent({
     rejectUnauthorized: false
@@ -100,7 +102,7 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
             if (isdecode) {
-                this.log.info("Encrypt all passwords done.");
+                this.log_translator("info", "Encrypt");
                 this.updateConfig(adapterconfigs);
             }
             const obj = await this.getForeignObjectAsync("system.config");
@@ -113,9 +115,10 @@ class E2Openwebif extends utils.Adapter {
             }
             for (const element of this.config.devices) {
                 if (!element.activ) {
-                    break;
+                    this.log_translator("info", "Device_disabled", element.ip);
+                    continue;
                 }
-                this.log.debug(`Language: ${this.lang}`);
+                this.log_translator("debug", "Language", this.lang);
                 const id = element.ip.replace(/[.\s]+/g, "_");
                 element.password = this.decrypt(element.password.split("<LUCKY-ESA>")[1]);
                 element.sshpassword = this.decrypt(element.sshpassword.split("<LUCKY-ESA>")[1]);
@@ -130,19 +133,19 @@ class E2Openwebif extends utils.Adapter {
                 this.devicesID[id] = element;
                 this.load[id] = false;
                 this.loadname[id] = "Unknown";
-                this.log.info(`DEVICE ID: ${id}`);
+                this.log_translator("info", "DeviceID", id);
                 this.setState("info.connection", false, true);
                 if (element.ip == "") {
-                    this.log.warn("Please enter an IP.");
+                    this.log_translator("warn", "Please enter an IP");
                     continue;
                 }
                 if (element.port === 0) {
-                    this.log.warn("Please enter an Port. Set port default 80");
+                    this.log_translator("warn", "Port default");
                     element.port = 80;
                 }
                 const data = {};
                 if (element.user != "" && element.password != "") {
-                    this.log.info(`Use password and username for device ${id}.`);
+                    this.log_translator("info", "USED_Username", id);
                     data.withCredentials = true;
                     data.auth = {
                         username: element.user,
@@ -151,7 +154,7 @@ class E2Openwebif extends utils.Adapter {
                 }
                 let webadd = "http://";
                 if (element.https) {
-                    this.log.info("Use HTTPS.");
+                    this.log_translator("info", "Used_HTTPS", id);
                     data["httpsAgent"] = httpsAgent;
                     webadd = "https://";
                 }
@@ -178,7 +181,7 @@ class E2Openwebif extends utils.Adapter {
                 if (this.isOnline[id] === 2 && typeof check_folder === "object") {
                     this.setWebIf(id);
                     this.subscribeStates(`${id}.remote.*`);
-                    this.log.info(`Device ${element.ip} start offline...`);
+                    this.log_translator("info", "Offline", element.ip);
                     await this.setStateAsync(`${id}.remote.STATUS_FROM_DEVICE`, {
                         val: this.isOnline[id],
                         ack: true
@@ -189,7 +192,7 @@ class E2Openwebif extends utils.Adapter {
                 if (this.isOnline[id] === 0 && typeof check_folder === "object") {
                     this.setWebIf(id);
                     this.subscribeStates(`${id}.remote.*`);
-                    this.log.info(`Device ${element.ip} start in standby...`);
+                    this.log_translator("info", "Standby_Modus", element.ip);
                     await this.setStateAsync(`${id}.remote.STATUS_FROM_DEVICE`, {
                         val: this.isOnline[id],
                         ack: false
@@ -198,44 +201,40 @@ class E2Openwebif extends utils.Adapter {
                     continue;
                 }
                 if (this.isOnline[id] === 2) {
-                    this.log.info(
-                        "Your device with IP "
-                        + element.ip + ":"
-                        + element.port
-                        + " is unreachable. Please check your Instance configuration and restart your adapter.");
+                    this.log_translator("info", "Unreachable", [element.ip, element.port]);
                     continue;
                 }
                 if (this.isOnline[id] === 1) {
                     const deviceInfo = await this.getRequest(cs.API.deviceinfo, id);
                     if (deviceInfo == null && !deviceInfo.boxtype) {
                         this.setWebIf(id);
-                        this.log.warn(`Connected to ${element.ip} device failed`);
+                        this.log_translator("warn", "Connection", element.ip);
                         this.subscribeStates(`${id}.remote.*`);
                         continue;
                     }
-                    this.log.info(`Create DeviceInfos for device ${id}.`);
+                    this.log_translator("info", "DEVICEINFO", id);
                     await this.createDeviceInfo(id, deviceInfo.boxtype, deviceInfo);
-                    this.log.info(`Create Remote Folder for device ${id}.`);
+                    this.log_translator("info", "Remote_Folder", id);
                     await this.createRemote(id, deviceInfo);
                     const statusInfo = await this.getRequest(cs.API.getcurrent, id);
                     if (!statusInfo || statusInfo.info == null) {
                         this.setWebIf(id);
-                        this.log.warn(`Cannot find Status from ${element.ip} device`);
+                        this.log_translator("warn", "Determine", element.ip);
                         this.subscribeStates(`${id}.remote.*`);
                         continue;
                     }
                     const tunersignal = await this.getRequest(cs.API.tunersignal, id);
                     if (tunersignal) {
                         statusInfo.tunerinfo = tunersignal;
-                        this.log.info(`Create TunerInfos for device ${id}.`);
+                        this.log_translator("info", "TunerInfos", id);
                     }
-                    this.log.info(`Create StatusInfos for device ${id}.`);
+                    this.log_translator("info", "StatusInfos", id);
                     await this.createStatusInfo(id, statusInfo);
                     const bouquets = await this.getRequest(cs.API.bouquets, id);
                     if (!bouquets || !bouquets["bouquets"]) {
-                        this.log.warn(`Cannot find Bouquets from ${element.ip} device`);
+                        this.log_translator("warn", "Cannot_Bouquets", id);
                     } else {
-                        this.log.info(`Create Bouquets and EPG for device ${id}.`);
+                        this.log_translator("info", "Bouquets_and_EPG", id);
                         await this.createBouquetsAndEPG(id, bouquets);
                     }
                     if (element.sshuser != "" && element.sshpassword != "") {
@@ -244,7 +243,7 @@ class E2Openwebif extends utils.Adapter {
                 }
                 this.setWebIf(id);
                 this.subscribeStates(`${id}.remote.*`);
-                this.log.info(`Start Interval with ${this.config.interval} seconds for device ${id}...`);
+                this.log_translator("info", "Starts_Interval", this.config.interval, id);
                 this.checkDevice(id);
             }
             this.cleanupQuality();
@@ -266,19 +265,19 @@ class E2Openwebif extends utils.Adapter {
             for (const element of all_dp.rows) {
                 if (
                     element &&
-                element.value &&
-                element.value.type &&
-                element.value.type === "device"
+                    element.value &&
+                    element.value.type &&
+                    element.value.type === "device"
                 ) {
                     if (
                         element.value &&
-                    element.value.common &&
-                    element.value.common.desc
+                        element.value.common &&
+                        element.value.common.desc
                     ) {
                         if (this.unloadDevices.includes(element.value.common.desc)) {
-                            this.log.debug(`all_dp: ${JSON.stringify(element)}`);
+                            this.log_translator("debug", "All_Datapoints", JSON.stringify(element));
                         } else {
-                            this.log.debug(`DELETE ${element.id}`);
+                            this.log_translator("debug", "Deleted", element.id);
                             await this.delObjectAsync(`${element.id}`, { recursive: true });
                         }
                     }
@@ -325,9 +324,9 @@ class E2Openwebif extends utils.Adapter {
                     this.setNewInterval(this.config.interval, id);
                 }
                 if (this.recordInterval[id] == null) {
-                    this.log.debug(`Set recordInterval for Device ${id}`);
+                    this.log_translator("debug", "Start_recording_interval", id);
                     this.recordInterval[id] = this.setInterval(async () => {
-                        this.log.debug(`Start check record device ${id}`);
+                        this.log_translator("debug", "Starting_checking_recordings", id);
                         this.checkRecording(id);
                     }, recordInterval * 1000);
                 }
@@ -365,7 +364,7 @@ class E2Openwebif extends utils.Adapter {
                     this.setState("info.connection", false, true);
                 }
                 this.updateInterval[id] = this.setInterval(async () => {
-                    this.log.debug(`Check device deepstandby ${id}`);
+                    this.log_translator("debug", "Checking_DeepStandby", id);
                     if (this.isOnline[id] === 2) {
                         this.checkdeepstandby(id);
                     } else {
@@ -394,7 +393,7 @@ class E2Openwebif extends utils.Adapter {
             const socket = net.createConnection(port, ip);
             socket.setTimeout(1000);
             socket.on("connect", async () => {
-                this.log.debug("Connected");
+                this.log_translator("debug", "Connected_device", id);
                 const powerstate = await this.getRequest(cs.API.powerstate, id);
                 let status = 1;
                 if (powerstate && powerstate["instandby"]) {
@@ -404,15 +403,15 @@ class E2Openwebif extends utils.Adapter {
                 resolve(status);
             });
             socket.on("timeout", () => {
-                this.log.debug("Disconnected");
+                this.log_translator("debug", "Device_disconnected", id);
                 socket.destroy();
                 resolve(2);
             });
             socket.on("error", () => {
-                this.log.debug("Offline");
+                this.log_translator("debug", "Device_offline", id);
                 socket.destroy();
                 if (reject) {
-                    this.log.debug(`reject: ${reject} device: ${id}`);
+                    this.log_translator("debug", "reject_device", reject, id);
                 }
                 resolve(2);
             });
@@ -420,39 +419,39 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async updateDevice(id) {
-        this.log.debug(`Start ${id}`);
+        this.log_translator("debug", "Start Update for device", id);
         try{
             if (this.load[id]) {
-                this.log.debug(`in Process: ${this.loadname[id]}`);
+                this.log_translator("debug", "In process", this.loadname[id]);
                 return;
             }
             const powerstate = await this.getRequest(cs.API.powerstate, id);
-            this.log.debug(`INFO powerstate: ${JSON.stringify(powerstate)}`);
+            this.log_translator("debug", "INFO powerstate", JSON.stringify(powerstate));
             if (!powerstate) {
-                this.log.debug(`Device ${id} is offline`);
+                this.log_translator("debug", "Device_offline", id);
                 this.isOnline[id] = 2;
                 await this.deleteInterval(id, true, false);
                 this.checkDevice(id);
                 return;
             }
             if (powerstate && powerstate.instandby) {
-                this.log.debug(`Device ${id} is in standby`);
+                this.log_translator("debug", "Device_standby", id);
                 await this.deleteInterval(id, true, false);
                 this.isOnline[id] = 0;
                 this.checkDevice(id);
                 return;
             }
             if (!powerstate.instandby && this.isOnline[id] != 1) {
-                this.log.debug(`Device ${id} is online.`);
+                this.log_translator("debug", "Device_online", id);
                 this.isOnline[id] = 1;
                 if (this.currentInterval[id] != this.config.interval) {
-                    this.log.debug(`Device ${id} is online. Set default interval`);
+                    this.log_translator("debug", "New interval Online", id, id);
                     this.setNewInterval(this.config.interval, id);
                 }
             }
             const getcurrent = await this.getRequest(cs.API.getcurrent, id);
             if (!getcurrent || getcurrent.info == null) {
-                this.log.warn(`Cannot find Infos from ${this.devicesID[id].ip} device`);
+                this.log_translator("warn", "find_info_device", id);
                 return;
             }
             this.inProgress(true, "updateDevice", id);
@@ -501,7 +500,7 @@ class E2Openwebif extends utils.Adapter {
             if (tunersignal) {
                 getcurrent.tunerinfo = tunersignal;
             }
-            this.log.debug(`getcurrent + tunerinfo: ${JSON.stringify(getcurrent)}`);
+            this.log_translator("info", "getcurrent + tunerinfo", JSON.stringify(getcurrent));
             if(
                 getcurrent.now &&
                 getcurrent.now.title &&
@@ -519,7 +518,6 @@ class E2Openwebif extends utils.Adapter {
                 checkType: true,
             });
             this.inProgress(false, "Unknown", id);
-            this.log.debug(`END ${id}`);
         } catch (e) {
             this.sendLucky(e, "try updateDevice");
             this.inProgress(false, "Unknown", id);
@@ -528,10 +526,10 @@ class E2Openwebif extends utils.Adapter {
 
     async updateDeviceInfo(id) {
         try {
-            this.log.debug(`Start update deviceInfo ${id}`);
+            this.log_translator("debug", "Start Update deviceInfo", id);
             const deviceInfo = await this.getRequest(cs.API.deviceinfo, id);
             if (deviceInfo != null && deviceInfo.boxtype) {
-                this.log.debug(`Update deviceInfo ${id}`);
+                this.log_translator("debug", "Update deviceInfo", id);
                 await this.json2iob.parse(`${id}.deviceInfo`, deviceInfo, {
                     forceIndex: true,
                     preferedArrayName: null,
@@ -569,18 +567,18 @@ class E2Openwebif extends utils.Adapter {
     }
 
     getRequest(path, id) {
-        this.log.debug(`Request: ${path}`);
+        this.log_translator("debug", "Request", path);
         try {
             return this.axiosInstance[id](encodeURI(path))
                 .then((response) => {
-                    this.log.debug(`Response: ${JSON.stringify(response.data)}`);
+                    this.log_translator("debug", "Response", JSON.stringify(response.data));
                     this.isOnline[id] = 1;
                     return response.data;
                 })
                 .catch((error) => {
                     this.isOnline[id] = 2;
-                    this.log.debug(`getRequest: ${error}`);
-                    error.response && this.log.debug(`Request: ${JSON.stringify(error.response.data)}`);
+                    this.log_translator("debug", "getRequest", error);
+                    error.response && this.log_translator("debug", "getRequest", JSON.stringify(error.response.data));
                     this.inProgress(false, "Unknown", id);
                     return false;
                 });
@@ -612,10 +610,9 @@ class E2Openwebif extends utils.Adapter {
 
     async sendCommand(path, id, deviceid) {
         try {
-            this.log.debug(`path: ${path}`);
+            this.log_translator("debug", "path", path);
             const res = await this.getRequest(path, deviceid);
-            this.log.debug(`response sendCommand: ${JSON.stringify(res)}`);
-            this.log.info(id.split(".").pop());
+            this.log_translator("debug", "response sendCommand", JSON.stringify(res));
             const last = id.split(".").pop();
             if (
                 last == "sendMessage" ||
@@ -640,7 +637,7 @@ class E2Openwebif extends utils.Adapter {
             if (state && !state.ack) {
                 let command = id.split(".").pop();
                 const deviceId = id.split(".")[2];
-                this.log.debug(`command: ${command} deviceID: ${deviceId}`);
+                this.log_translator("debug", "Command", command, deviceId);
                 if (command === "WOL" || (command === "powerstate" && state.val === 6)) {
                     this.wakeonlan(state, id, deviceId);
                     return;
@@ -650,11 +647,11 @@ class E2Openwebif extends utils.Adapter {
                     return;
                 }
                 if (this.isOnline[deviceId] === 2) {
-                    this.log.info(`Receiver ${this.devicesID[deviceId].ip} is Offline. Cannot send a request!`);
+                    this.log_translator("info", "Receiver is Offline", this.devicesID[deviceId].ip);
                     return;
                 }
                 if (this.isOnline[deviceId] === 0) {
-                    this.log.info(`Receiver ${this.devicesID[deviceId].ip} is in standby!`);
+                    this.log_translator("info", "Device_standby", this.devicesID[deviceId].ip);
                 }
                 if (cs.KEYIDS[command] != null && state.val) {
                     this.sendCommand(`${cs.PATH["COMMAND"]}${cs.KEYIDS[command]}`, id, deviceId);
@@ -760,7 +757,7 @@ class E2Openwebif extends utils.Adapter {
                         this.setAckFlag(id, {result: true});
                         break;
                     default:
-                        this.log.debug(`received unknown command ${command} for device ${deviceId}`);
+                        this.log_translator("debug", "Received unknown command", command, deviceId);
                 }
             }
         } catch (e) {
@@ -783,10 +780,9 @@ class E2Openwebif extends utils.Adapter {
                     startkey: `${this.namespace}.${deviceId}.remote.snapshot.pictures.`,
                     endkey: `${this.namespace}.${deviceId}.remote.snapshot.pictures.\u9999`
                 });
-                this.log.debug(`all_dp: ${JSON.stringify(all_dp)}`);
+                this.log_translator("debug", "All_Datapoints", JSON.stringify(all_dp));
                 if (all_dp && all_dp.rows) {
                     for (const element of all_dp.rows) {
-                        this.log.debug(`element: ${JSON.stringify(element)}`);
                         if (
                             element &&
                             element.value &&
@@ -797,18 +793,22 @@ class E2Openwebif extends utils.Adapter {
                             element.value.native.picname!= ""
                         ) {
                             if (files_arr.includes(element.value.native.picname)) {
-                                this.log.debug(`Found file: ${element.value.native.picname}`);
+                                this.log_translator("debug", "Found file", element.value.native.picname);
                             } else {
-                                this.log.debug(`Cannot found file: ${element.value.native.picname}`);
+                                this.log_translator("debug", "File not found", element.value.native.picname);
                                 await this.delObjectAsync(id);
-                                this.log.info(`Delete datapoint: ${id}`);
+                                this.log_translator("debug", "Delete datapoint", id);
                             }
                         } else {
-                            this.log.debug(`Cannot found file name: ${element.id}`);
+                            this.log_translator("debug", "Filename not found", element.id);
                         }
                     }
                 } else {
-                    this.log.info(`Cannot read: ${this.namespace}.${deviceId}.remote.snapshot.pictures`);
+                    this.log_translator(
+                        "debug",
+                        "No filenames found in folder",
+                        `${this.namespace}.${deviceId}.remote.snapshot.pictures`
+                    );
                 }
                 let data;
                 if (fs.existsSync(file_data)) {
@@ -1781,7 +1781,7 @@ class E2Openwebif extends utils.Adapter {
 
     async sendLucky(error, func) {
         try {
-            this.log.warn(`${func}: ${error}`);
+            this.log_translator("warn", "Error", func, error);
             if (this.config.lucky) {
                 const obj = await this.getForeignObjectAsync(`system.host.${this.host}`);
                 const npm = await this.getForeignStateAsync(`system.host.${this.host}.versions.npmCurrent`);
@@ -1935,7 +1935,7 @@ class E2Openwebif extends utils.Adapter {
                                         });
                                     }
                                 } else {
-                                    this.log.info(`Missing quality ${states.q}`);
+                                    this.log_translator("debug", "Missing quality", states.q);
                                 }
                             }
                         }
@@ -1950,6 +1950,17 @@ class E2Openwebif extends utils.Adapter {
             }
         } catch (e) {
             this.sendLucky(e, "try cleanupQuality");
+        }
+    }
+
+    log_translator(level, text, merge_array, merge_array2, merge_array3) {
+        try {
+            merge_array = merge_array != null ? merge_array : "";
+            merge_array2 = merge_array2 != null ? merge_array2 : "";
+            merge_array3 = merge_array3 != null ? merge_array3 : "";
+            this.log[level](util.format(tl.trans[text][this.lang], merge_array, merge_array2, merge_array3));
+        } catch (e) {
+            this.sendLucky(e, "try log_translator");
         }
     }
 
