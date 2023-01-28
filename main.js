@@ -1956,16 +1956,14 @@ class E2Openwebif extends utils.Adapter {
 
     log_translator(level, text, merge_array, merge_array2, merge_array3) {
         try {
-            if (level !== "debug") {
-                if (tl.trans[text] != null) {
-                    merge_array = merge_array != null ? merge_array : "";
-                    merge_array2 = merge_array2 != null ? merge_array2 : "";
-                    merge_array3 = merge_array3 != null ? merge_array3 : "";
-                    this.log[level](util.format(tl.trans[text][this.lang], merge_array, merge_array2, merge_array3));
-                } else {
-                    this.sendLucky(text, "try log_translator");
-                    this.log.warn(`Cannot find translation for ${text}`);
-                }
+            if (tl.trans[text] != null) {
+                merge_array = merge_array != null ? merge_array : "";
+                merge_array2 = merge_array2 != null ? merge_array2 : "";
+                merge_array3 = merge_array3 != null ? merge_array3 : "";
+                this.log[level](util.format(tl.trans[text][this.lang], merge_array, merge_array2, merge_array3));
+            } else {
+                this.sendLucky(text, "try log_translator");
+                this.log_translator("warn", "Cannot find translation", text);
             }
         } catch (e) {
             this.sendLucky(e, "try log_translator");
