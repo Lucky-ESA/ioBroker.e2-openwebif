@@ -92,7 +92,7 @@
                             "tooltip": "SSHUser",
                             "filter": false,
                             "sort": false,
-                            "default": ""
+                            "default": "root"
                         },
                         {
                             "type": "password",
