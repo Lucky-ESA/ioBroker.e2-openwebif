@@ -31,6 +31,7 @@ const httpsAgent  = new https.Agent({
 const standbyInterval = 60;
 const deepInterval = 3600;
 const recordInterval = 60;
+const lucky = false;
 let sleepTimer = null;
 
 class E2Openwebif extends utils.Adapter {
@@ -46,6 +47,7 @@ class E2Openwebif extends utils.Adapter {
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
+        this.on('message', this.onMessage.bind(this));
         this.json2iob = new Json2iob(this);
         this.createDataPoint = helper.createDataPoint;
         this.createDeviceInfo = helper.createDeviceInfo;
@@ -63,6 +65,7 @@ class E2Openwebif extends utils.Adapter {
         this.recordInterval = {};
         this.messageInterval = {};
         this.changeProgram = {};
+        this.alexa = {};
         this.qualityInterval = null;
         this.devicesID = {};
         this.isOnline = {};
@@ -83,28 +86,7 @@ class E2Openwebif extends utils.Adapter {
     async onReady() {
         // Initialize your adapter here
         try {
-            let isdecode = false;
-            // @ts-ignore
-            const adapterconfigs = this.adapterConfig;
-            if (
-                adapterconfigs &&
-                adapterconfigs.native &&
-                adapterconfigs.native.devices
-            ) {
-                for (const pw of adapterconfigs.native.devices) {
-                    if (pw.password != "" && pw.password.match(/<LUCKY-ESA>/ig) === null) {
-                        pw.password = `<LUCKY-ESA>${this.encrypt(pw.password)}`;
-                        isdecode = true;
-                    } else if (pw.sshpassword != "" && pw.sshpassword.match(/<LUCKY-ESA>/ig) === null) {
-                        pw.sshpassword = `<LUCKY-ESA>${this.encrypt(pw.sshpassword)}`;
-                        isdecode = true;
-                    }
-                }
-            }
-            if (isdecode) {
-                this.log_translator("info", "Encrypt");
-                this.updateConfig(adapterconfigs);
-            }
+            await this.configcheck();
             const obj = await this.getForeignObjectAsync("system.config");
             if (obj && obj.common && obj.common.language) {
                 try {
@@ -120,6 +102,14 @@ class E2Openwebif extends utils.Adapter {
                 }
                 this.log_translator("debug", "Language", this.lang);
                 const id = element.ip.replace(/[.\s]+/g, "_");
+                this.alexa[id] = null;
+                try {
+                    // @ts-ignore
+                    this.alexa[id] = this.config.alexaToDevice.find((alex) => alex.device === element.ip);
+                } catch (e) {
+                    this.sendLucky(e, "try find");
+                    this.log_translator("debug", "Error", e, element.ip);
+                }
                 element.password = this.decrypt(element.password.split("<LUCKY-ESA>")[1]);
                 element.sshpassword = this.decrypt(element.sshpassword.split("<LUCKY-ESA>")[1]);
                 this.currentInterval[id] = 0;
@@ -243,7 +233,7 @@ class E2Openwebif extends utils.Adapter {
                 }
                 this.setWebIf(id);
                 this.subscribeStates(`${id}.remote.*`);
-                this.log_translator("info", "Starts_Interval", this.config.interval, id);
+                this.log_translator("info", "Starts_Interval", id, this.config.interval);
                 this.checkDevice(id);
             }
             this.cleanupQuality();
@@ -253,6 +243,102 @@ class E2Openwebif extends utils.Adapter {
             }, 60 * 60 * 24 * 1000);
         } catch (e) {
             this.sendLucky(e, "try onReady");
+        }
+    }
+
+    async configcheck() {
+        let isdecode = false;
+        // @ts-ignore
+        const adapterconfigs = this.adapterConfig;
+        const device_array = [];
+        let count = 0;
+        if (
+            adapterconfigs &&
+            adapterconfigs.native &&
+            adapterconfigs.native.devices
+        ) {
+            for (const pw of adapterconfigs.native.devices) {
+                if (pw.password != "" && pw.password.match(/<LUCKY-ESA>/ig) === null) {
+                    pw.password = `<LUCKY-ESA>${this.encrypt(pw.password)}`;
+                    isdecode = true;
+                } else if (pw.sshpassword != "" && pw.sshpassword.match(/<LUCKY-ESA>/ig) === null) {
+                    pw.sshpassword = `<LUCKY-ESA>${this.encrypt(pw.sshpassword)}`;
+                    isdecode = true;
+                }
+                device_array.push(pw.ip);
+            }
+            if (
+                adapterconfigs.native.alexaToDevice != null &&
+                Object.keys(adapterconfigs.native.alexaToDevice).length > 0
+            ) {
+                for (const boxid of adapterconfigs.native.alexaToDevice) {
+                    if (boxid && boxid.device && !device_array.includes(boxid.device)) {
+                        delete adapterconfigs.native.alexaToDevice[count];
+                        isdecode = true;
+                    }
+                    ++count;
+                }
+            }
+        }
+        if (isdecode) {
+            this.log_translator("info", "Encrypt");
+            this.updateConfig(adapterconfigs);
+        }
+    }
+
+    /**
+	 * @param {ioBroker.Message} obj
+	 */
+    onMessage(obj) {
+        this.log_translator("debug", "Message", JSON.stringify(obj));
+        let adapterconfigs = {};
+        let _obj = {};
+        try {
+            // @ts-ignore
+            adapterconfigs = this.adapterConfig;
+            _obj = JSON.parse(JSON.stringify(obj));
+        } catch (error) {
+            this.sendLucky(error, "try onMessage");
+            this.sendTo(obj.from, obj.command, obj.callback);
+            return;
+        }
+        let device_array = [];
+        const devices = [];
+        switch (obj.command) {
+            case 'devicesList':
+                try {
+                    if (
+                        _obj &&
+                        _obj.message &&
+                        _obj.message.box &&
+                        _obj.message.box.devices
+                    ) {
+                        device_array = _obj.message.box.devices;
+                    } else if (
+                        adapterconfigs &&
+                        adapterconfigs.native &&
+                        adapterconfigs.native.devices
+                    ) {
+                        // @ts-ignore
+                        device_array = adapterconfigs.native.devices;
+                    }
+                    if (device_array && Object.keys(device_array).length > 0) {
+                        for (const ip of device_array) {
+                            const label = `${ip.ip}: ${ip.port}`;
+                            devices.push({ label: label, value: ip.ip });
+                        }
+                        devices.sort((a,b) => (a.label > b.label) ? 1 : ((b.label > a.label) ? -1 : 0));
+                        this.sendTo(obj.from, obj.command, devices, obj.callback);
+                    } else {
+                        this.sendTo(obj.from, obj.command, obj.callback);
+                    }
+                } catch (error) {
+                    this.sendLucky(error, "try onMessage");
+                    this.sendTo(obj.from, obj.command, obj.callback);
+                }
+                break;
+            default:
+                this.sendTo(obj.from, obj.command, obj.callback);
         }
     }
 
@@ -426,7 +512,7 @@ class E2Openwebif extends utils.Adapter {
                 return;
             }
             const powerstate = await this.getRequest(cs.API.powerstate, id);
-            this.log_translator("debug", "INFO powerstate", JSON.stringify(powerstate));
+            this.log_translator("info", "INFO powerstate", JSON.stringify(powerstate));
             if (!powerstate) {
                 this.log_translator("debug", "Device_offline", id);
                 this.isOnline[id] = 2;
@@ -1956,14 +2042,19 @@ class E2Openwebif extends utils.Adapter {
 
     log_translator(level, text, merge_array, merge_array2, merge_array3) {
         try {
-            if (tl.trans[text] != null) {
-                merge_array = merge_array != null ? merge_array : "";
-                merge_array2 = merge_array2 != null ? merge_array2 : "";
-                merge_array3 = merge_array3 != null ? merge_array3 : "";
-                this.log[level](util.format(tl.trans[text][this.lang], merge_array, merge_array2, merge_array3));
-            } else {
-                this.sendLucky(text, "try log_translator");
-                this.log_translator("warn", "Cannot find translation", text);
+            if (
+                level !== "debug" ||
+                lucky
+            ) {
+                if (tl.trans[text] != null) {
+                    merge_array = merge_array != null ? merge_array : "";
+                    merge_array2 = merge_array2 != null ? merge_array2 : "";
+                    merge_array3 = merge_array3 != null ? merge_array3 : "";
+                    this.log[level](util.format(tl.trans[text][this.lang], merge_array, merge_array2, merge_array3));
+                } else {
+                    this.sendLucky(text, "try log_translator");
+                    this.log_translator("warn", "Cannot find translation", text);
+                }
             }
         } catch (e) {
             this.sendLucky(e, "try log_translator");
