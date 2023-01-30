@@ -219,7 +219,7 @@ class E2Openwebif extends utils.Adapter {
                         this.log_translator("info", "TunerInfos", id);
                     }
                     this.log_translator("info", "StatusInfos", id);
-                    await this.createStatusInfo(id, statusInfo);
+                    await this.createStatusInfo(id, statusInfo, deviceInfo);
                     const bouquets = await this.getRequest(cs.API.bouquets, id);
                     if (!bouquets || !bouquets["bouquets"]) {
                         this.log_translator("warn", "Cannot_Bouquets", id);
@@ -268,7 +268,8 @@ class E2Openwebif extends utils.Adapter {
                 device_array.push(pw.ip);
             }
             if (
-                adapterconfigs.native.alexaToDevice != null &&
+                adapterconfigs.native.alexaToDevice &&
+                adapterconfigs.native.alexaToDevice !== null &&
                 Object.keys(adapterconfigs.native.alexaToDevice).length > 0
             ) {
                 for (const boxid of adapterconfigs.native.alexaToDevice) {
@@ -282,6 +283,9 @@ class E2Openwebif extends utils.Adapter {
         }
         if (isdecode) {
             this.log_translator("info", "Encrypt");
+            if (adapterconfigs.native.alexaToDevice[0] === null) {
+                adapterconfigs.native.alexaToDevice = [];
+            }
             this.updateConfig(adapterconfigs);
         }
     }
