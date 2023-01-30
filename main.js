@@ -147,8 +147,12 @@ class E2Openwebif extends utils.Adapter {
                     this.log_translator("info", "Used_HTTPS", id);
                     data["httpsAgent"] = httpsAgent;
                     webadd = "https://";
+                    if (element.port !== 443) {
+                        this.log_translator("info", "Wrong_HTTPS", element.port);
+                    }
                 }
                 const url = `${webadd}${element.ip}:${element.port}`;
+                this.log.info(JSON.stringify(data));
                 this.axiosInstance[id] = axios.create({
                     method: "GET",
                     baseURL: url,
