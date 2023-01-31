@@ -10,28 +10,25 @@
 const utils = require("@iobroker/adapter-core");
 
 // Load your modules here, e.g.:
-const axios       = require("axios").default;
-const wol         = require("wol");
-const net         = require("net");
-const SSH2Promise = require("ssh2-promise");
-const Json2iob    = require("./lib/json2iob");
-const helper      = require("./lib/helper");
-const tl          = require("./lib/translator.js");
-const cs          = require("./lib/constants");
-const fs          = require("fs");
-const https       = require("https");
-const util        = require("node:util");
-
-const httpsAgent  = new https.Agent({
-    rejectUnauthorized: false
-//    cert: fs.readFileSync("./lib/boxcert.cer"),
-//    key: fs.readFileSync("./lib/client.key"),
-//    ca: fs.readFileSync("./lib/boxcert.cer"),
-});
+const axios           = require("axios").default;
+const wol             = require("wol");
+const net             = require("net");
+const SSH2Promise     = require("ssh2-promise");
+const Json2iob        = require("./lib/json2iob");
+const helper          = require("./lib/helper");
+const tl              = require("./lib/translator.js");
+const cs              = require("./lib/constants");
+const fs              = require("fs");
+const https           = require("https");
+const util            = require("node:util");
 const standbyInterval = 60;
-const deepInterval = 3600;
-const recordInterval = 60;
-const lucky = false;
+const deepInterval    = 3600;
+const recordInterval  = 60;
+const lucky           = true;
+const httpsAgent      = new https.Agent({
+    rejectUnauthorized: false
+});
+
 let sleepTimer = null;
 
 class E2Openwebif extends utils.Adapter {
@@ -48,36 +45,40 @@ class E2Openwebif extends utils.Adapter {
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
         this.on('message', this.onMessage.bind(this));
-        this.json2iob = new Json2iob(this);
-        this.createDataPoint = helper.createDataPoint;
-        this.createDeviceInfo = helper.createDeviceInfo;
-        this.createRemote = helper.createRemote;
-        this.createStatusInfo = helper.createStatusInfo;
+        this.json2iob             = new Json2iob(this);
+        this.createDataPoint      = helper.createDataPoint;
+        this.createDeviceInfo     = helper.createDeviceInfo;
+        this.createRemote         = helper.createRemote;
+        this.createStatusInfo     = helper.createStatusInfo;
         this.createBouquetsAndEPG = helper.createBouquetsAndEPG;
-        this.createFolderJson = helper.createFolderJson;
-        this.loadBouquets = helper.loadBouquets;
-        this.statesLoadTimer = helper.statesLoadTimer;
-        this.statesSetFolder = helper.statesSetFolder;
-        this.createTimerFolder = helper.createTimerFolder;
-        this.axiosInstance = {};
-        this.axiosSnapshot = {};
-        this.updateInterval = {};
-        this.recordInterval = {};
-        this.messageInterval = {};
-        this.changeProgram = {};
-        this.alexa = {};
-        this.qualityInterval = null;
-        this.devicesID = {};
-        this.isOnline = {};
-        this.currentInterval = {};
-        this.folderstates = {};
-        this.webif = {};
-        this.unloadDevices = [];
-        this.counter = 1;
-        this.load = {};
-        this.loadname = {};
-        this.checkPicon = {};
-        this.lang = "de";
+        this.createFolderJson     = helper.createFolderJson;
+        this.loadBouquets         = helper.loadBouquets;
+        this.statesLoadTimer      = helper.statesLoadTimer;
+        this.statesSetFolder      = helper.statesSetFolder;
+        this.createTimerFolder    = helper.createTimerFolder;
+        this.axiosInstance        = {};
+        this.axiosSnapshot        = {};
+        this.updateInterval       = {};
+        this.recordInterval       = {};
+        this.messageInterval      = {};
+        this.changeProgram        = {};
+        this.intervalStandby      = {};
+        this.intervalDeepStandby  = {};
+        this.intervalRecord       = {};
+        this.intervalOnline       = {};
+        this.alexa                = {};
+        this.devicesID            = {};
+        this.isOnline             = {};
+        this.currentInterval      = {};
+        this.folderstates         = {};
+        this.webif                = {};
+        this.unloadDevices        = [];
+        this.load                 = {};
+        this.loadname             = {};
+        this.checkPicon           = {};
+        this.qualityInterval      = null;
+        this.counter              = 1;
+        this.lang                 = "de";
     }
 
     /**
@@ -112,11 +113,31 @@ class E2Openwebif extends utils.Adapter {
                 }
                 element.password = this.decrypt(element.password.split("<LUCKY-ESA>")[1]);
                 element.sshpassword = this.decrypt(element.sshpassword.split("<LUCKY-ESA>")[1]);
-                this.currentInterval[id] = 0;
-                this.updateInterval[id] = null;
-                this.recordInterval[id] = null;
-                this.messageInterval[id] = null;
-                this.changeProgram[id] = null;
+                this.currentInterval[id]     = 0;
+                this.updateInterval[id]      = null;
+                this.recordInterval[id]      = null;
+                this.messageInterval[id]     = null;
+                this.changeProgram[id]       = null;
+                this.intervalStandby[id]     = standbyInterval;
+                this.intervalDeepStandby[id] = deepInterval;
+                this.intervalRecord[id]      = recordInterval;
+                this.intervalOnline[id]      = this.config.interval;
+                const intsta = await this.getStateAsync(`${id}.STANDBY_INTERVAL`);
+                if (intsta && intsta.val != standbyInterval) {
+                    this.intervalStandby[id] = intsta.val;
+                }
+                const intrec = await this.getStateAsync(`${id}.RECORD_INTERVAL`);
+                if (intrec && intrec.val != recordInterval) {
+                    this.intervalRecord[id] = intrec.val;
+                }
+                const intssh = await this.getStateAsync(`${id}.SSH_INTERVAL`);
+                if (intssh && intssh.val != deepInterval) {
+                    this.intervalDeepStandby[id] = intssh.val;
+                }
+                const intonl = await this.getStateAsync(`${id}.ONLINE_INTERVAL`);
+                if (intonl && intonl.val != this.config.interval) {
+                    this.intervalOnline[id] = intonl.val;
+                }
                 this.webif[id] = false;
                 this.checkPicon[id] = {};
                 this.unloadDevices.push(id);
@@ -152,7 +173,6 @@ class E2Openwebif extends utils.Adapter {
                     }
                 }
                 const url = `${webadd}${element.ip}:${element.port}`;
-                this.log.info(JSON.stringify(data));
                 this.axiosInstance[id] = axios.create({
                     method: "GET",
                     baseURL: url,
@@ -174,13 +194,13 @@ class E2Openwebif extends utils.Adapter {
                 );
                 if (this.isOnline[id] === 2 && typeof check_folder === "object") {
                     this.setWebIf(id);
-                    this.subscribeStates(`${id}.remote.*`);
+                    this.setsubscribeStates(id);
                     this.log_translator("info", "Offline", element.ip);
                     await this.setStateAsync(`${id}.remote.STATUS_FROM_DEVICE`, {
                         val: this.isOnline[id],
                         ack: true
                     });
-                    this.setNewInterval(standbyInterval, id);
+                    this.setNewInterval(this.intervalStandby[id], id);
                     continue;
                 }
                 if (this.isOnline[id] === 0 && typeof check_folder === "object") {
@@ -191,7 +211,7 @@ class E2Openwebif extends utils.Adapter {
                         val: this.isOnline[id],
                         ack: false
                     });
-                    this.setNewInterval(standbyInterval, id);
+                    this.setNewInterval(this.intervalStandby[id], id);
                     continue;
                 }
                 if (this.isOnline[id] === 2) {
@@ -203,7 +223,7 @@ class E2Openwebif extends utils.Adapter {
                     if (deviceInfo == null && !deviceInfo.boxtype) {
                         this.setWebIf(id);
                         this.log_translator("warn", "Connection", element.ip);
-                        this.subscribeStates(`${id}.remote.*`);
+                        this.setsubscribeStates(id);
                         continue;
                     }
                     this.log_translator("info", "DEVICEINFO", id);
@@ -214,7 +234,7 @@ class E2Openwebif extends utils.Adapter {
                     if (!statusInfo || statusInfo.info == null) {
                         this.setWebIf(id);
                         this.log_translator("warn", "Determine", element.ip);
-                        this.subscribeStates(`${id}.remote.*`);
+                        this.setsubscribeStates(id);
                         continue;
                     }
                     const tunersignal = await this.getRequest(cs.API.tunersignal, id);
@@ -236,8 +256,8 @@ class E2Openwebif extends utils.Adapter {
                     }
                 }
                 this.setWebIf(id);
-                this.subscribeStates(`${id}.remote.*`);
-                this.log_translator("info", "Starts_Interval", id, this.config.interval);
+                this.setsubscribeStates(id);
+                this.log_translator("info", "Starts_Interval", id, this.intervalOnline[id]);
                 this.checkDevice(id);
             }
             this.cleanupQuality();
@@ -248,6 +268,14 @@ class E2Openwebif extends utils.Adapter {
         } catch (e) {
             this.sendLucky(e, "try onReady");
         }
+    }
+
+    setsubscribeStates(id) {
+        this.subscribeStates(`${id}.remote.*`);
+        this.subscribeStates(`${id}.ONLINE_INTERVAL`);
+        this.subscribeStates(`${id}.RECORD_INTERVAL`);
+        this.subscribeStates(`${id}.SSH_INTERVAL`);
+        this.subscribeStates(`${id}.STANDBY_INTERVAL`);
     }
 
     async configcheck() {
@@ -414,19 +442,19 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
             if (this.isOnline[id] === 1) {
-                if (this.currentInterval[id] != this.config.interval) {
-                    this.setNewInterval(this.config.interval, id);
+                if (this.currentInterval[id] != this.intervalOnline[id]) {
+                    this.setNewInterval(this.intervalOnline[id], id);
                 }
                 if (this.recordInterval[id] == null) {
                     this.log_translator("debug", "Start_recording_interval", id);
                     this.recordInterval[id] = this.setInterval(async () => {
                         this.log_translator("debug", "Starting_checking_recordings", id);
                         this.checkRecording(id);
-                    }, recordInterval * 1000);
+                    }, this.intervalRecord[id] * 1000);
                 }
             } else {
-                if (this.currentInterval[id] != standbyInterval) {
-                    this.setNewInterval(standbyInterval, id);
+                if (this.currentInterval[id] != this.intervalStandby[id]) {
+                    this.setNewInterval(this.intervalStandby[id], id);
                 }
             }
         } catch (e) {
@@ -520,7 +548,7 @@ class E2Openwebif extends utils.Adapter {
                 return;
             }
             const powerstate = await this.getRequest(cs.API.powerstate, id);
-            this.log_translator("info", "INFO powerstate", JSON.stringify(powerstate));
+            this.log_translator("debug", "INFO powerstate", JSON.stringify(powerstate));
             if (!powerstate) {
                 this.log_translator("debug", "Device_offline", id);
                 this.isOnline[id] = 2;
@@ -538,9 +566,9 @@ class E2Openwebif extends utils.Adapter {
             if (!powerstate.instandby && this.isOnline[id] != 1) {
                 this.log_translator("debug", "Device_online", id);
                 this.isOnline[id] = 1;
-                if (this.currentInterval[id] != this.config.interval) {
+                if (this.currentInterval[id] != this.intervalOnline[id]) {
                     this.log_translator("debug", "New interval Online", id, id);
-                    this.setNewInterval(this.config.interval, id);
+                    this.setNewInterval(this.intervalOnline[id], id);
                 }
             }
             const getcurrent = await this.getRequest(cs.API.getcurrent, id);
@@ -844,6 +872,12 @@ class E2Openwebif extends utils.Adapter {
                     case "sendCommand":
                         this.sendSSH(id, state, deviceId);
                         break;
+                    case "STANDBY_INTERVAL":
+                    case "RECORD_INTERVAL":
+                    case "SSH_INTERVAL":
+                    case "ONLINE_INTERVAL":
+                        this.changeInterval(command, id, state, deviceId);
+                        break;
                     case "answer":
                     case "message":
                     case "timeout":
@@ -857,6 +891,35 @@ class E2Openwebif extends utils.Adapter {
         } catch (e) {
             this.sendLucky(e, "try onStateChange");
         }
+    }
+
+    async changeInterval(command, id, state, deviceId) {
+        if (command === "STANDBY_INTERVAL" && state.val > 0 && state.val < 1001) {
+            if (this.intervalStandby[deviceId] != state.val) {
+                this.intervalStandby[deviceId] = state.val;
+                await this.deleteInterval(id, false, true);
+                this.setNewInterval(this.intervalStandby[deviceId], deviceId);
+            }
+        } else if (command === "RECORD_INTERVAL" && state.val > 0 && state.val < 1001) {
+            if (this.intervalRecord[deviceId] != state.val) {
+                this.intervalRecord[deviceId] = state.val;
+                await this.deleteInterval(id, true, false);
+                this.checkDevice(deviceId);
+            }
+        } else if (command === "SSH_INTERVAL" && state.val > 0 && state.val < 10001) {
+            if (this.intervalDeepStandby[deviceId] != state.val) {
+                this.intervalDeepStandby[deviceId] = state.val;
+                await this.deleteInterval(id, false, true);
+                this.setNewInterval(this.intervalDeepStandby[deviceId], deviceId);
+            }
+        } else if (command === "ONLINE_INTERVAL" && state.val > 0 && state.val < 1001) {
+            if (this.intervalOnline[deviceId] != state.val) {
+                this.intervalOnline[deviceId] = state.val;
+                await this.deleteInterval(id, false, true);
+                this.setNewInterval(this.intervalOnline[deviceId], deviceId);
+            }
+        }
+        this.setAckFlag(id, {result: true});
     }
 
     async deletesnapshot(state, id, deviceId) {
@@ -1213,16 +1276,16 @@ class E2Openwebif extends utils.Adapter {
                                 this.devicesID[deviceId].port, deviceId
                             );
                             if (this.isOnline[deviceId] == 1) {
-                                this.setNewInterval(this.config.interval, deviceId);
+                                this.setNewInterval(this.intervalOnline[deviceId], deviceId);
                             } else if (this.isOnline[deviceId] == 2) {
                                 await this.deleteInterval(id, true, false);
-                                this.setNewInterval(standbyInterval, deviceId);
+                                this.setNewInterval(this.intervalStandby[id], deviceId);
                             }
                         } else if (state.val == 1)  {
                             this.isOnline[deviceId] = 2;
                             await this.deleteInterval(id, true, false);
                             this.setAckFlag(id, {result: true}, {val: false});
-                            this.setNewInterval(standbyInterval, deviceId);
+                            this.setNewInterval(this.intervalStandby[id], deviceId);
                         }
                     }
                     this.log_translator("debug", "INFO powerstate", JSON.stringify(power));
@@ -1361,16 +1424,17 @@ class E2Openwebif extends utils.Adapter {
     async changeStatus(state, id, deviceId) {
         try {
             if (state && state.val === 2) {
-                this.log_translator("info", "The status deepstandbys", deviceId, deepInterval);
+                this.log_translator("info", "The status deepstandby", deviceId, this.intervalDeepStandby[deviceId]);
                 this.isOnline[deviceId] = 2;
                 await this.deleteInterval(id, true, false);
-                this.setNewInterval(deepInterval, deviceId);
+                await this.sleep(this.config.boottime * 1000);
+                this.setNewInterval(this.intervalDeepStandby[deviceId], deviceId);
                 this.setState(`${deviceId}.STATUS_DEVICE`, {
                     val: this.isOnline[deviceId],
                     ack: true
                 });
             } else if (state && state.val === 1) {
-                this.log_translator("info", "Set new Status", deviceId, this.config.interval);
+                this.log_translator("info", "Set new Status", deviceId, this.intervalOnline[deviceId]);
                 await this.sleep(this.config.boottime * 1000);
                 this.checkdeepstandby(deviceId);
             }
