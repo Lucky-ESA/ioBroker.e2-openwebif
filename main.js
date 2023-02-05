@@ -30,6 +30,7 @@ const httpsAgent      = new https.Agent({
 });
 
 let sleepTimer = null;
+let stop       = false;
 
 class E2Openwebif extends utils.Adapter {
 
@@ -90,6 +91,7 @@ class E2Openwebif extends utils.Adapter {
     async onReady() {
         // Initialize your adapter here
         try {
+            stop = true;
             await this.configcheck();
             const obj = await this.getForeignObjectAsync("system.config");
             if (obj && obj.common && obj.common.language) {
@@ -271,6 +273,7 @@ class E2Openwebif extends utils.Adapter {
             this.qualityInterval = this.setInterval(() => {
                 this.cleanupQuality();
             }, 60 * 60 * 24 * 1000);
+            stop = false;
         } catch (e) {
             this.sendLucky(e, "try onReady");
         }
@@ -359,13 +362,25 @@ class E2Openwebif extends utils.Adapter {
       * @param {ioBroker.Object | null | undefined} obj
       */
     onObjectChange(id, obj) {
-        // @ts-ignore
-        const adapterconfigs = this.adapterConfig;
-        const last = id.split(".").pop();
-        if (obj) {
-            this.log_translator("debug", "object changed", id, JSON.stringify(obj));
-        } else {
-            this.log_translator("debug", "object deleted", id);
+        try {
+            if (!stop) {
+                const last = id.split(".").pop();
+                const isOK = this.config.own_alexa.find((ip) => ip["own_datapoint"] === last);
+                if (obj) {
+                    if (
+                        isOK &&
+                        (isOK["own_command"] != obj.native.command ||
+                        isOK["own_name"] != obj.common.name ||
+                        isOK["own_datapoint"] != last)
+                    ) {
+                        this.log_translator("error", "object changed", id, JSON.stringify(obj));
+                    }
+                } else {
+                    this.log_translator("error", "object deleted", id);
+                }
+            }
+        } catch (error) {
+            this.sendLucky(error, "try onObjectChange");
         }
     }
 
@@ -487,7 +502,6 @@ class E2Openwebif extends utils.Adapter {
                 delete this.double_call[obj._id];
                 break;
             case "getDatapoint":
-                //"hidden": "!_alive",
                 if (obj.callback) {
                     try {
                         this.log.info("OBJECT: " + JSON.stringify(_obj));
