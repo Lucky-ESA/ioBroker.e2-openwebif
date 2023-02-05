@@ -24,7 +24,7 @@ const util            = require("node:util");
 const standbyInterval = 60;
 const deepInterval    = 3600;
 const recordInterval  = 60;
-const lucky           = true;
+const lucky           = false;
 const httpsAgent      = new https.Agent({
     rejectUnauthorized: false
 });
@@ -45,6 +45,7 @@ class E2Openwebif extends utils.Adapter {
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
         this.on('message', this.onMessage.bind(this));
+        this.on('objectChange', this.onObjectChange.bind(this));
         this.json2iob             = new Json2iob(this);
         this.createDataPoint      = helper.createDataPoint;
         this.createDeviceInfo     = helper.createDeviceInfo;
@@ -56,6 +57,8 @@ class E2Openwebif extends utils.Adapter {
         this.statesLoadTimer      = helper.statesLoadTimer;
         this.statesSetFolder      = helper.statesSetFolder;
         this.createTimerFolder    = helper.createTimerFolder;
+        this.createAlexaFolder    = helper.createAlexaFolder;
+        this.double_call          = {};
         this.axiosInstance        = {};
         this.axiosSnapshot        = {};
         this.updateInterval       = {};
@@ -190,11 +193,12 @@ class E2Openwebif extends utils.Adapter {
                 });
                 this.isOnline[id]  = await this.pingDevice(element.ip, element.port, id);
                 const check_folder = await this.getObjectAsync(
-                    `${this.namespace}.${id}.STATUS_DEVICE`,
+                    `${id}.STATUS_DEVICE`,
                 );
                 if (this.isOnline[id] === 2 && typeof check_folder === "object") {
                     this.setWebIf(id);
                     this.setsubscribeStates(id);
+                    await this.checkOwnAlexa(element, id);
                     this.log_translator("info", "Offline", element.ip);
                     await this.setStateAsync(`${id}.remote.STATUS_FROM_DEVICE`, {
                         val: this.isOnline[id],
@@ -205,17 +209,18 @@ class E2Openwebif extends utils.Adapter {
                 }
                 if (this.isOnline[id] === 0 && typeof check_folder === "object") {
                     this.setWebIf(id);
-                    this.subscribeStates(`${id}.remote.*`);
+                    this.setsubscribeStates(id);
                     this.log_translator("info", "Standby_Modus", element.ip);
                     await this.setStateAsync(`${id}.remote.STATUS_FROM_DEVICE`, {
                         val: this.isOnline[id],
                         ack: false
                     });
+                    await this.checkOwnAlexa(element, id);
                     this.setNewInterval(this.intervalStandby[id], id);
                     continue;
                 }
-                if (this.isOnline[id] === 2) {
-                    this.log_translator("info", "Unreachable", [element.ip, element.port]);
+                if (this.isOnline[id] === 2 && typeof check_folder !== "object") {
+                    this.log_translator("warn", "Unreachable", element.ip, element.port);
                     continue;
                 }
                 if (this.isOnline[id] === 1) {
@@ -254,6 +259,7 @@ class E2Openwebif extends utils.Adapter {
                     if (element.sshuser != "" && element.sshpassword != "") {
                         await this.connect_ssh(id);
                     }
+                    await this.checkOwnAlexa(element, id);
                 }
                 this.setWebIf(id);
                 this.setsubscribeStates(id);
@@ -270,62 +276,164 @@ class E2Openwebif extends utils.Adapter {
         }
     }
 
-    setsubscribeStates(id) {
-        this.subscribeStates(`${id}.remote.*`);
-        this.subscribeStates(`${id}.ONLINE_INTERVAL`);
-        this.subscribeStates(`${id}.RECORD_INTERVAL`);
-        this.subscribeStates(`${id}.SSH_INTERVAL`);
-        this.subscribeStates(`${id}.STANDBY_INTERVAL`);
-    }
-
-    async configcheck() {
-        let isdecode = false;
-        // @ts-ignore
-        const adapterconfigs = this.adapterConfig;
-        const device_array = [];
-        let count = 0;
-        if (
-            adapterconfigs &&
-            adapterconfigs.native &&
-            adapterconfigs.native.devices
-        ) {
-            for (const pw of adapterconfigs.native.devices) {
-                if (pw.password != "" && pw.password.match(/<LUCKY-ESA>/ig) === null) {
-                    pw.password = `<LUCKY-ESA>${this.encrypt(pw.password)}`;
-                    isdecode = true;
-                } else if (pw.sshpassword != "" && pw.sshpassword.match(/<LUCKY-ESA>/ig) === null) {
-                    pw.sshpassword = `<LUCKY-ESA>${this.encrypt(pw.sshpassword)}`;
-                    isdecode = true;
-                }
-                device_array.push(pw.ip);
-            }
+    async checkOwnAlexa(element, id) {
+        try {
+            //config empty and object not exists then delete folder
+            const obj = await this.getObjectAsync(`${id}.remote.alexa`);
+            const isfind = this.config.own_alexa.find((ip) => ip["own_device"] === element.ip);
             if (
-                adapterconfigs.native.alexaToDevice &&
-                adapterconfigs.native.alexaToDevice !== null &&
-                Object.keys(adapterconfigs.native.alexaToDevice).length > 0
+                obj &&
+                !isfind
             ) {
-                for (const boxid of adapterconfigs.native.alexaToDevice) {
-                    if (boxid && boxid.device && !device_array.includes(boxid.device)) {
-                        delete adapterconfigs.native.alexaToDevice[count];
-                        isdecode = true;
+                this.log_translator("debug", "Deleted  folder", `${id}.remote.alexa`);
+                await this.delObjectAsync(`${id}.remote.alexa`, { recursive: true });
+                return;
+            } else if (!obj && isfind) {
+                this.createAlexaFolder(id);
+            }
+            //create or changne datapoint
+            if (
+                Array.isArray(this.config.own_alexa) &&
+                Object.keys(this.config.own_alexa).length > 0
+            ) {
+                const smartName = {};
+                let common = {};
+                let native = {};
+                for (const command of this.config.own_alexa) {
+                    this.log_translator("debug", "Command:", JSON.stringify(command));
+                    if (
+                        command &&
+                        command["own_device"] != "" &&
+                        element.ip == command["own_device"] &&
+                        command["own_datapoint"] != "" &&
+                        command["own_command"] != "" &&
+                        command["own_name"] != ""
+                    ) {
+                        if (command["own_datapoint"] != "" && command["own_alexa"]) {
+                            if (command["own_alexa"]) {
+                                smartName[this.lang] = command["own_name"];
+                                smartName["smartType"] = "SWITCH";
+                            }
+                            common = {
+                                type: "boolean",
+                                role: "button",
+                                name: command["own_name"],
+                                desc: command["own_name"],
+                                read: true,
+                                write: true,
+                                def: false,
+                                smartName: command["own_alexa"] ? smartName : false
+                            };
+                            native = {
+                                command: command["own_command"]
+                            };
+                            await this.createDataPoint(`${id}.remote.alexa.${command["own_datapoint"]}`, common, "state", native);
+                        }
                     }
-                    ++count;
                 }
             }
-        }
-        if (isdecode) {
-            this.log_translator("info", "Encrypt");
-            if (adapterconfigs.native.alexaToDevice[0] === null) {
-                adapterconfigs.native.alexaToDevice = [];
+            //Delete Alexa Dateipoints
+            const all_dp = await this.getObjectListAsync({
+                startkey: `${this.namespace}.${id}.remote.alexa.`,
+                endkey: `${this.namespace}.${id}.remote.alexa.\u9999`
+            });
+            if (all_dp != null && all_dp.rows) {
+                for (const dp of all_dp.rows) {
+                    const last = dp.id.split(".").pop();
+                    const isOK = this.config.own_alexa.find((ip) => ip["own_datapoint"] === last);
+                    if (!isOK) {
+                        this.log_translator("debug", "last", last);
+                        await this.delObjectAsync(`${id}.remote.alexa.${last}`);
+                    }
+                }
             }
-            this.updateConfig(adapterconfigs);
+            this.log_translator("debug", "Delete Alexa Datapoints", JSON.stringify(all_dp));
+        } catch (error) {
+            this.sendLucky(error, "try checkOwnAlexa");
         }
     }
 
     /**
-	 * @param {ioBroker.Message} obj
-	 */
+      * Is called if a subscribed object changes
+      * @param {string} id
+      * @param {ioBroker.Object | null | undefined} obj
+      */
+    onObjectChange(id, obj) {
+        // @ts-ignore
+        const adapterconfigs = this.adapterConfig;
+        const last = id.split(".").pop();
+        if (obj) {
+            this.log_translator("debug", "object changed", id, JSON.stringify(obj));
+        } else {
+            this.log_translator("debug", "object deleted", id);
+        }
+    }
+
+    async setsubscribeStates(id) {
+        await this.subscribeStatesAsync(`${id}.remote.*`);
+        await this.subscribeObjectsAsync(`${id}.remote.alexa*`);
+        await this.subscribeStatesAsync(`${id}.ONLINE_INTERVAL`);
+        await this.subscribeStatesAsync(`${id}.RECORD_INTERVAL`);
+        await this.subscribeStatesAsync(`${id}.SSH_INTERVAL`);
+        await this.subscribeStatesAsync(`${id}.STANDBY_INTERVAL`);
+    }
+
+    async configcheck() {
+        try {
+            let isdecode = false;
+            // @ts-ignore
+            const adapterconfigs = this.adapterConfig;
+            const device_array = [];
+            let count = 0;
+            if (
+                adapterconfigs &&
+                adapterconfigs.native &&
+                adapterconfigs.native.devices
+            ) {
+                for (const pw of adapterconfigs.native.devices) {
+                    if (pw.password != "" && pw.password.match(/<LUCKY-ESA>/ig) === null) {
+                        pw.password = `<LUCKY-ESA>${this.encrypt(pw.password)}`;
+                        isdecode = true;
+                    } else if (pw.sshpassword != "" && pw.sshpassword.match(/<LUCKY-ESA>/ig) === null) {
+                        pw.sshpassword = `<LUCKY-ESA>${this.encrypt(pw.sshpassword)}`;
+                        isdecode = true;
+                    }
+                    device_array.push(pw.ip);
+                }
+                if (
+                    adapterconfigs.native.alexaToDevice &&
+                    adapterconfigs.native.alexaToDevice != null &&
+                    Object.keys(adapterconfigs.native.alexaToDevice).length > 0
+                ) {
+                    for (const boxid of adapterconfigs.native.alexaToDevice) {
+                        if (boxid && boxid.device && !device_array.includes(boxid.device)) {
+                            delete adapterconfigs.native.alexaToDevice[count];
+                            isdecode = true;
+                        }
+                        ++count;
+                    }
+                }
+            }
+            if (isdecode) {
+                this.log_translator("info", "Encrypt");
+                if (adapterconfigs.native.alexaToDevice[0] === null) {
+                    adapterconfigs.native.alexaToDevice = [];
+                }
+                this.updateConfig(adapterconfigs);
+            }
+        } catch (error) {
+            this.sendLucky(error, "try configcheck");
+        }
+    }
+
+    /**
+     * @param {ioBroker.Message} obj
+     */
     onMessage(obj) {
+        if (this.double_call[obj._id] != null) {
+            return;
+        }
+        this.double_call[obj._id] = true;
         this.log_translator("debug", "Message", JSON.stringify(obj));
         let adapterconfigs = {};
         let _obj = {};
@@ -335,46 +443,86 @@ class E2Openwebif extends utils.Adapter {
             _obj = JSON.parse(JSON.stringify(obj));
         } catch (error) {
             this.sendLucky(error, "try onMessage");
-            this.sendTo(obj.from, obj.command, obj.callback);
+            this.sendTo(obj.from, obj.command, [], obj.callback);
+            delete this.double_call[obj._id];
             return;
         }
         let device_array = [];
         const devices = [];
         switch (obj.command) {
-            case 'devicesList':
-                try {
-                    if (
-                        _obj &&
-                        _obj.message &&
-                        _obj.message.box &&
-                        _obj.message.box.devices
-                    ) {
-                        device_array = _obj.message.box.devices;
-                    } else if (
-                        adapterconfigs &&
-                        adapterconfigs.native &&
-                        adapterconfigs.native.devices
-                    ) {
-                        // @ts-ignore
-                        device_array = adapterconfigs.native.devices;
-                    }
-                    if (device_array && Object.keys(device_array).length > 0) {
-                        for (const ip of device_array) {
-                            const label = `${ip.ip}: ${ip.port}`;
-                            devices.push({ label: label, value: ip.ip });
+            case "getDevicesList":
+                if (obj.callback) {
+                    try {
+                        if (
+                            _obj &&
+                            _obj.message &&
+                            _obj.message.box &&
+                            _obj.message.box.devices
+                        ) {
+                            device_array = _obj.message.box.devices;
+                        } else if (
+                            adapterconfigs &&
+                            adapterconfigs.native &&
+                            adapterconfigs.native.devices
+                        ) {
+                            // @ts-ignore
+                            device_array = adapterconfigs.native.devices;
                         }
-                        devices.sort((a,b) => (a.label > b.label) ? 1 : ((b.label > a.label) ? -1 : 0));
-                        this.sendTo(obj.from, obj.command, devices, obj.callback);
-                    } else {
-                        this.sendTo(obj.from, obj.command, obj.callback);
+                        if (device_array && Object.keys(device_array).length > 0) {
+                            for (const ip of device_array) {
+                                const label = `${ip.ip}: ${ip.port}`;
+                                devices.push({ label: label, value: ip.ip });
+                            }
+                            devices.sort((a,b) => (a.label > b.label) ? 1 : ((b.label > a.label) ? -1 : 0));
+                            this.sendTo(obj.from, obj.command, devices, obj.callback);
+                        } else {
+                            this.sendTo(obj.from, obj.command, [], obj.callback);
+                        }
+                    } catch (error) {
+                        delete this.double_call[obj._id];
+                        this.sendLucky(error, "try onMessage");
+                        this.sendTo(obj.from, obj.command, [], obj.callback);
                     }
-                } catch (error) {
-                    this.sendLucky(error, "try onMessage");
-                    this.sendTo(obj.from, obj.command, obj.callback);
                 }
+                delete this.double_call[obj._id];
+                break;
+            case "getDatapoint":
+                //"hidden": "!_alive",
+                if (obj.callback) {
+                    try {
+                        this.log.info("OBJECT: " + JSON.stringify(_obj));
+                        if (
+                            _obj &&
+                            _obj.message &&
+                            _obj.message.alexaid &&
+                            _obj.message.alexaid.own_device &&
+                            _obj.message.alexaid.own_command &&
+                            _obj.message.alexaid.own_name != null &&
+                            _obj.message.alexaid.own_device != "" &&
+                            _obj.message.alexaid.own_name != "" &&
+                            _obj.message.alexaid.own_command != "" &&
+                            (_obj.message.alexaid.own_datapoint == "null" ||
+                            _obj.message.alexaid.own_datapoint == null)
+                        ) {
+                            const alexaid = _obj.message.alexaid;
+                            const id = alexaid.own_device.replace(/[.\s]+/g, "_");
+                            const set_id = this.makeRandomNumber(10, 4);
+                            devices.push({ label: `${id}_${set_id}`, value: `${id}_${set_id}` });
+                            this.sendTo(obj.from, obj.command, devices, obj.callback);
+                        } else {
+                            this.sendTo(obj.from, obj.command, [], obj.callback);
+                        }
+                    } catch (error) {
+                        this.sendLucky(error, "try onMessage");
+                        this.sendTo(obj.from, obj.command, [], obj.callback);
+                        delete this.double_call[obj._id];
+                    }
+                }
+                delete this.double_call[obj._id];
                 break;
             default:
-                this.sendTo(obj.from, obj.command, obj.callback);
+                this.sendTo(obj.from, obj.command, [], obj.callback);
+                delete this.double_call[obj._id];
         }
     }
 
@@ -894,6 +1042,7 @@ class E2Openwebif extends utils.Adapter {
     }
 
     async changeInterval(command, id, state, deviceId) {
+        this.log_translator("debug", "Change Interval:", command, id, state.val);
         if (command === "STANDBY_INTERVAL" && state.val > 0 && state.val < 1001) {
             if (this.intervalStandby[deviceId] != state.val) {
                 this.intervalStandby[deviceId] = state.val;
@@ -1025,7 +1174,7 @@ class E2Openwebif extends utils.Adapter {
 
     async createsnapshot(id, command, state, deviceId) {
         try {
-            this.log_translator("debug", "Command", command);
+            this.log_translator("debug", "Command:", command);
             let url = `/grab?command=-o&r=1080&format=png&jpgquali=100`;
             if (command === "snapshot_osd") {
                 url += `&mode=osd`;
@@ -1424,7 +1573,14 @@ class E2Openwebif extends utils.Adapter {
     async changeStatus(state, id, deviceId) {
         try {
             if (state && state.val === 2) {
-                this.log_translator("info", "The status deepstandby", deviceId, this.intervalDeepStandby[deviceId]);
+                const current_interval = this.intervalStandby[deviceId];
+                this.intervalStandby[deviceId] = this.intervalDeepStandby[deviceId];
+                this.log_translator(
+                    "info",
+                    "The status deepstandby",
+                    deviceId,
+                    this.intervalDeepStandby[deviceId]
+                );
                 this.isOnline[deviceId] = 2;
                 await this.deleteInterval(id, true, false);
                 await this.sleep(this.config.boottime * 1000);
@@ -1433,6 +1589,7 @@ class E2Openwebif extends utils.Adapter {
                     val: this.isOnline[deviceId],
                     ack: true
                 });
+                this.intervalStandby[deviceId] = current_interval;
             } else if (state && state.val === 1) {
                 this.log_translator("info", "Set new Status", deviceId, this.intervalOnline[deviceId]);
                 await this.sleep(this.config.boottime * 1000);
@@ -2008,6 +2165,11 @@ class E2Openwebif extends utils.Adapter {
             this.sendLucky(e, "try makeRandomString");
             return "gzW5M";
         }
+    }
+
+    makeRandomNumber(max, min) {
+        const length = Math.floor(Math.random() * (max - min + 1) + min);
+        return ("0".repeat(length) + Math.floor(Math.random() * 10 ** length)).slice(-length);
     }
 
     sleep(ms) {

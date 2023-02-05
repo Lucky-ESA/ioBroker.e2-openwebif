@@ -58,5 +58,9 @@
     "ALEXA_snapshot_osd": "Testo Alexa per SNAPSHOT-OSD",
     "BOOTTIME": "Tempo di avvio della tua casella da deep-standby",
     "BOX IP": "SCATOLA IP",
-    "Info Alexa": "I dispositivi devono prima essere salvati per poterli selezionare qui. ADATTATORE IOT RICHIESTO!"
+    "Info Alexa": "I dispositivi devono prima essere salvati per poterli selezionare qui. ADATTATORE IOT RICHIESTO!",
+    "Own Alexa data points": "Gestisci punti dati Alexa.",
+    "OWN NAME": "Comando vocale Alexa",
+    "OWN COMMAND": "Comando completo (es. /api/zap?sRef=1:0:19xxx)",
+    "Datapoint": "Data point"
 }

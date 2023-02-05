@@ -58,5 +58,9 @@
     "ALEXA_snapshot_osd": "Alexa text for SNAPSHOT-OSD",
     "BOOTTIME": "Boot time of your box from deep-standby",
     "BOX IP": "BOX IP",
-    "Info Alexa": "The devices must first be saved in order to select them here. IOT ADAPTER REQUIRED!"
+    "Info Alexa": "The devices must first be saved in order to select them here. IOT ADAPTER REQUIRED!",
+    "Own Alexa data points": "Own Alexa data points.",
+    "OWN NAME": "Alexa voice command",
+    "OWN COMMAND": "Complete command (eg. /api/zap?sRef=1:0:19xxx)",
+    "Datapoint": "Data point"
 }

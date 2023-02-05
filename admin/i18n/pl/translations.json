@@ -58,5 +58,9 @@
     "ALEXA_snapshot_osd": "Tekst Alexa dla SNAPSHOT-OSD",
     "BOOTTIME": "Czas uruchamiania twojego urządzenia z trybu głębokiego czuwania",
     "BOX IP": "PUDEŁKO IP",
-    "Info Alexa": "Urządzenia muszą być najpierw zapisane, aby móc je tutaj wybrać. WYMAGANY ADAPTER IOT!"
+    "Info Alexa": "Urządzenia muszą być najpierw zapisane, aby móc je tutaj wybrać. WYMAGANY ADAPTER IOT!",
+    "Own Alexa data points": "Własne punkty danych Alexa.",
+    "OWN NAME": "Polecenie głosowe Alexy",
+    "OWN COMMAND": "Kompletne polecenie (np. /api/zap?sRef=1:0:19xxx)",
+    "Datapoint": "Punkt widzenia"
 }

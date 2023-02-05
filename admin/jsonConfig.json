@@ -7,10 +7,10 @@
             "label": "Tab Device",
             "items": {
                 "_headerAdapter": {
-					"type": "header",
-					"text": "e2-openwebif adapter settings",
-					"size": 2
-				},
+                    "type": "header",
+                    "text": "e2-openwebif adapter settings",
+                    "size": 2
+                },
                 "devices": {
                     "newLine": true,
                     "sm": 12,
@@ -123,9 +123,9 @@
                     ]
                 },
                 "dividerafterdevice": {
-					"newLine": true,
-					"type": "divider"
-				},
+                    "newLine": true,
+                    "type": "divider"
+                },
                 "interval": {
                     "type": "number",
                     "newLine": true,
@@ -185,14 +185,14 @@
             "label": "Tab Alexa",
             "items": {
                 "_headerAlexa": {
-					"type": "header",
-					"text": "Info Alexa",
-					"size": 2
-				},
+                    "type": "header",
+                    "text": "Info Alexa",
+                    "size": 2
+                },
                 "alexaToDevice": {
-					"sm": 12,
-					"md": 12,
-					"lg": 12,
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
                     "noDelete": false,
                     "type": "table",
                     "style": {
@@ -202,25 +202,24 @@
                         {
                             "type": "checkbox",
                             "title": "Activate alexa",
-                            "width": "100px",
+                            "width": "30px",
                             "attr": "alexa",
                             "allowAddByFilter": false,
                             "filter": true,
                             "sort": true,
                             "default": false,
-                            "alsoDependsOn": ["device"],
                             "style": {
                                 "textAlign": "center"
                             }
                         },
                         {
-							"type": "selectSendTo",
-							"title": "BOX IP",
-							"attr": "device",
+                            "type": "selectSendTo",
+                            "title": "BOX IP",
+                            "attr": "device",
                             "disabled": "!data.alexa",
-							"jsonData": "{\"box\":{\"devices\":${JSON.stringify(globalData.devices)},\"alexaToDevice\":${JSON.stringify(globalData.alexaToDevice)}}}",
-							"command": "devicesList",
-							"width": "100px",
+                            "jsonData": "{\"box\":{\"devices\":${JSON.stringify(globalData.devices)},\"alexaToDevice\":${JSON.stringify(globalData.alexaToDevice)}}}",
+                            "command": "getDevicesList",
+                            "width": "100px",
                             "filter": false,
                             "sort": false,
                             "alsoDependsOn":[
@@ -229,7 +228,7 @@
                                 "devices",
                                 "alexa"
                             ]
-						},
+                        },
                         {
                             "type": "text",
                             "title": "ALEXA_KEY_POWER",
@@ -527,6 +526,91 @@
                             "width": "100px",
                             "attr": "SNAPSHOT_OSD",
                             "disabled": "!data.alexa",
+                            "default": "",
+                            "filter": false,
+                            "sort": false
+                        }
+                    ]
+                },
+                "_headerOwnAlexa": {
+                    "type": "header",
+                    "text": "Own Alexa data points",
+                    "size": 2
+                },
+                "own_alexa": {
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "noDelete": false,
+                    "type": "table",
+                    "style": {
+                        "textAlign": "center"
+                    },
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "title": "Activ",
+                            "width": "10%",
+                            "attr": "own_alexa",
+                            "allowAddByFilter": false,
+                            "filter": true,
+                            "sort": true,
+                            "default": false,
+                            "style": {
+                                "textAlign": "center"
+                            }
+                        },
+                        {
+                            "type": "selectSendTo",
+                            "title": "Datapoint",
+                            "width": "10%",
+                            "attr": "own_datapoint",
+                            "disabled": "!data.own_alexa || data.own_datapoint != null",
+                            "command": "getDatapoint",
+                            "filter": false,
+                            "jsonData": "{\"alexaid\":{\"own_command\":\"${data.own_command}\",\"own_name\":\"${data.own_name}\",\"own_device\":\"${data.own_device}\",\"own_datapoint\":\"${data.own_datapoint}\",\"alexaToDevice\":${JSON.stringify(globalData.own_alexa)}}}",
+                            "sort": false,
+                            "alsoDependsOn":[
+                                "own_alexa",
+                                "own_device",
+                                "own_name",
+                                "devices",
+                                "own_command"
+                            ]
+                        },
+                        {
+                            "type": "selectSendTo",
+                            "title": "BOX IP",
+                            "attr": "own_device",
+                            "disabled": "!data.own_alexa",
+                            "jsonData": "{\"box\":{\"devices\":${JSON.stringify(globalData.devices)},\"own_alexa\":${JSON.stringify(globalData.own_alexa)}}}",
+                            "command": "getDevicesList",
+                            "width": "20%",
+                            "filter": false,
+                            "sort": false,
+                            "alsoDependsOn":[
+                                "own_alexa",
+                                "own_device",
+                                "devices",
+                                "own_alexa"
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "title": "OWN NAME",
+                            "width": "30%",
+                            "attr": "own_name",
+                            "disabled": "!data.own_alexa",
+                            "default": "",
+                            "filter": false,
+                            "sort": false
+                        },
+                        {
+                            "type": "text",
+                            "title": "OWN COMMAND",
+                            "width": "40%",
+                            "attr": "own_command",
+                            "disabled": "!data.own_alexa",
                             "default": "",
                             "filter": false,
                             "sort": false

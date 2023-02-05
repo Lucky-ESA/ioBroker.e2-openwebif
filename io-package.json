@@ -115,7 +115,8 @@
         "lucky": false,
         "errorinfo": "Error after start",
         "boottime": 20,
-        "alexaToDevice": []
+        "alexaToDevice": [],
+        "own_alexa": []
     },
     "objects": [],
     "instanceObjects": [

@@ -58,5 +58,9 @@
     "ALEXA_snapshot_osd": "Alexa-Text für SNAPSHOT-OSD",
     "BOOTTIME": "Bootzeit deiner Box aus dem Deep-Standby",
     "BOX IP": "BOX-IP",
-    "Info Alexa": "Die Geräte müssen erst gespeichert werden, um sie hier auswählen zu können. IOT-ADAPTER ERFORDERLICH!"
+    "Info Alexa": "Die Geräte müssen erst gespeichert werden, um sie hier auswählen zu können. IOT-ADAPTER ERFORDERLICH!",
+    "Own Alexa data points": "Eigener Alexa Datenpunkt.",
+    "OWN NAME": "Alexa Sprachbefehl",
+    "OWN COMMAND": "Kompletter Befehl (b.Bsp. /api/zap?sRef=1:0:19xxx)",
+    "Datapoint": "Datenpunkt"
 }

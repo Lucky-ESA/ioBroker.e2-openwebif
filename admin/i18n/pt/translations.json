@@ -58,5 +58,9 @@
     "ALEXA_snapshot_osd": "Texto Alexa para SNAPSHOT-OSD",
     "BOOTTIME": "Tempo de inicialização da sua caixa do modo de espera profunda",
     "BOX IP": "CAIXA IP",
-    "Info Alexa": "Os dispositivos devem primeiro ser salvos para selecioná-los aqui. NECESSÁRIO ADAPTADOR IOT!"
+    "Info Alexa": "Os dispositivos devem primeiro ser salvos para selecioná-los aqui. NECESSÁRIO ADAPTADOR IOT!",
+    "Own Alexa data points": "Pontos de dados Alexa próprios.",
+    "OWN NAME": "Comando de voz Alexa",
+    "OWN COMMAND": "Comando completo (por exemplo, /api/zap?sRef=1:0:19xxx)",
+    "Datapoint": "Ponto de vista"
 }

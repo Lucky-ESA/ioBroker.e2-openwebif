@@ -58,5 +58,9 @@
     "ALEXA_snapshot_osd": "Alexa-tekst voor SNAPSHOT-OSD",
     "BOOTTIME": "Opstarttijd van uw box vanuit deep-standby",
     "BOX IP": "DOOS IP",
-    "Info Alexa": "De apparaten moeten eerst worden opgeslagen om ze hier te kunnen selecteren. IOT-ADAPTER VEREIST!"
+    "Info Alexa": "De apparaten moeten eerst worden opgeslagen om ze hier te kunnen selecteren. IOT-ADAPTER VEREIST!",
+    "Own Alexa data points": "Bezit Alexa-datapunten.",
+    "OWN NAME": "Alexa-spraakopdracht",
+    "OWN COMMAND": "Volledige opdracht (bijv. /api/zap?sRef=1:0:19xxx)",
+    "Datapoint": "Datapunt"
 }

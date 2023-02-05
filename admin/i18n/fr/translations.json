@@ -58,5 +58,9 @@
     "ALEXA_snapshot_osd": "Texte Alexa pour SNAPSHOT-OSD",
     "BOOTTIME": "Temps de démarrage de votre box depuis la veille profonde",
     "BOX IP": "BOX IP",
-    "Info Alexa": "Les appareils doivent d'abord être enregistrés afin de pouvoir les sélectionner ici. ADAPTATEUR IOT REQUIS !"
+    "Info Alexa": "Les appareils doivent d'abord être enregistrés afin de pouvoir les sélectionner ici. ADAPTATEUR IOT REQUIS !",
+    "Own Alexa data points": "Propres points de données Alexa.",
+    "OWN NAME": "Commande vocale Alexa",
+    "OWN COMMAND": "Commande complète (ex. /api/zap?sRef=1:0:19xxx)",
+    "Datapoint": "Point de données"
 }
