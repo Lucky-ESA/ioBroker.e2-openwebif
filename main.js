@@ -24,7 +24,7 @@ const util            = require("node:util");
 const standbyInterval = 60;
 const deepInterval    = 3600;
 const recordInterval  = 60;
-const lucky           = false;
+const lucky           = true;
 const httpsAgent      = new https.Agent({
     rejectUnauthorized: false
 });
@@ -91,8 +91,17 @@ class E2Openwebif extends utils.Adapter {
     async onReady() {
         // Initialize your adapter here
         try {
+            await this.setStateAsync("info.connection", false, true);
+            if (Object.keys(this.config.devices).length === 0) {
+                this.log_translator("info", "No device");
+                return;
+            }
             stop = true;
-            await this.configcheck();
+            const isChange = await this.configcheck();
+            if (isChange) {
+                this.log_translator("info", "Adapter restart");
+                return;
+            }
             const obj = await this.getForeignObjectAsync("system.config");
             if (obj && obj.common && obj.common.language) {
                 try {
@@ -116,8 +125,12 @@ class E2Openwebif extends utils.Adapter {
                     this.sendLucky(e, "try find");
                     this.log_translator("debug", "Error", e, element.ip);
                 }
-                element.password = this.decrypt(element.password.split("<LUCKY-ESA>")[1]);
-                element.sshpassword = this.decrypt(element.sshpassword.split("<LUCKY-ESA>")[1]);
+                if (element.password != "" && element.password.match(/<LUCKY-ESA>/ig) != null) {
+                    element.password = this.decrypt(element.password.split("<LUCKY-ESA>")[1]);
+                }
+                if (element.sshpassword != "" && element.sshpassword.match(/<LUCKY-ESA>/ig) != null) {
+                    element.sshpassword = this.decrypt(element.sshpassword.split("<LUCKY-ESA>")[1]);
+                }
                 this.currentInterval[id]     = 0;
                 this.updateInterval[id]      = null;
                 this.recordInterval[id]      = null;
@@ -150,7 +163,6 @@ class E2Openwebif extends utils.Adapter {
                 this.load[id] = false;
                 this.loadname[id] = "Unknown";
                 this.log_translator("info", "DeviceID", id);
-                this.setState("info.connection", false, true);
                 if (element.ip == "") {
                     this.log_translator("warn", "Please enter an IP");
                     continue;
@@ -435,7 +447,9 @@ class E2Openwebif extends utils.Adapter {
                     adapterconfigs.native.alexaToDevice = [];
                 }
                 this.updateConfig(adapterconfigs);
+                return true;
             }
+            return false;
         } catch (error) {
             this.sendLucky(error, "try configcheck");
         }
@@ -504,7 +518,6 @@ class E2Openwebif extends utils.Adapter {
             case "getDatapoint":
                 if (obj.callback) {
                     try {
-                        this.log.info("OBJECT: " + JSON.stringify(_obj));
                         if (
                             _obj &&
                             _obj.message &&
