@@ -28,10 +28,7 @@
     "language": "JavaScript",
     "nodeVersion": "16",
     "adminUi": "json",
-    "tools": [
-        "ESLint",
-        "type checking"
-    ],
+    "tools": ["ESLint", "type checking", "Prettier"],
     "releaseScript": "yes",
     "devServer": "yes",
     "devServerPort": 8081,

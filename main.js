@@ -24,7 +24,7 @@ const util            = require("node:util");
 const standbyInterval = 60;
 const deepInterval    = 3600;
 const recordInterval  = 60;
-const lucky           = true;
+const lucky           = false;
 const httpsAgent      = new https.Agent({
     rejectUnauthorized: false
 });
@@ -45,8 +45,8 @@ class E2Openwebif extends utils.Adapter {
         this.on("ready", this.onReady.bind(this));
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
-        this.on('message', this.onMessage.bind(this));
-        this.on('objectChange', this.onObjectChange.bind(this));
+        this.on("message", this.onMessage.bind(this));
+        this.on("objectChange", this.onObjectChange.bind(this));
         this.json2iob             = new Json2iob(this);
         this.createDataPoint      = helper.createDataPoint;
         this.createDeviceInfo     = helper.createDeviceInfo;
@@ -459,6 +459,7 @@ class E2Openwebif extends utils.Adapter {
      * @param {ioBroker.Message} obj
      */
     onMessage(obj) {
+        this.log.info("OBEN: " + JSON.stringify(obj));
         if (this.double_call[obj._id] != null) {
             return;
         }
@@ -547,10 +548,78 @@ class E2Openwebif extends utils.Adapter {
                 }
                 delete this.double_call[obj._id];
                 break;
+            case "getBlockly":
+                if (
+                    _obj &&
+                    _obj.message &&
+                    _obj.message.text &&
+                    _obj.message.timeout != null &&
+                    _obj.message.msgtype != null &&
+                    _obj.message.device &&
+                    _obj.message.text != "" &&
+                    _obj.message.device != ""
+                ) {
+                    if (_obj.message.device === "all") {
+                        for (const dev in this.devicesID) {
+                            const userdev = this.devicesID[dev];
+                            if (userdev.activ) {
+                                const id = userdev.ip.replace(/[.\s]+/g, "_");
+                                this.setStateMessage(
+                                    id,
+                                    _obj.message.text,
+                                    _obj.message.timeout,
+                                    _obj.message.msgtype
+                                );
+                            }
+                        }
+                    } else {
+                        const id = _obj.message.device.replace(/[.\s]+/g, "_");
+                        this.log.info(this.devicesID[id].activ);
+                        if (this.devicesID[id] && this.devicesID[id].activ) {
+                            this.log.info(this.isOnline[id]);
+                            if (this.isOnline[id] === 1) {
+                                this.log.info(this.isOnline[id]);
+                                this.log.info(id);
+                                this.setStateMessage(
+                                    id,
+                                    _obj.message.text,
+                                    _obj.message.timeout,
+                                    _obj.message.msgtype
+                                );
+                            } else {
+                                this.log_translator("debug", "Device_offline", id);
+                            }
+                        } else {
+                            this.log_translator("debug", "Device_disabled", id);
+                        }
+                    }
+                }
+                this.log.info(JSON.stringify(obj));
+                delete this.double_call[obj._id];
+                break;
             default:
                 this.sendTo(obj.from, obj.command, [], obj.callback);
                 delete this.double_call[obj._id];
         }
+    }
+
+    async setStateMessage(id, text, timeout, type) {
+        await this.setStateAsync(`${id}.remote.message.message`, {
+            val: text,
+            ack: true,
+        });
+        await this.setStateAsync(`${id}.remote.message.timeout`, {
+            val: timeout,
+            ack: true,
+        });
+        await this.setStateAsync(`${id}.remote.message.type`, {
+            val: type,
+            ack: true,
+        });
+        await this.setStateAsync(`${id}.remote.message.sendMessage`, {
+            val: true,
+            ack: false,
+        });
     }
 
     async checkDeviceFolder() {
@@ -1709,9 +1778,10 @@ class E2Openwebif extends utils.Adapter {
             this.setAckFlag(id, return_message, {val: false});
             this.log_translator("debug", "Message answer", JSON.stringify(return_message));
             if (return_message && return_message.result && send_type.val == 0) {
+                await this.sleep(200);
                 const res = await this.getRequest(`${cs.PATH.COMMAND}108`, deviceId);
                 this.log_translator("debug", "Command 108", JSON.stringify(res));
-                this.messageInterval[deviceId] = this.setInterval(async () => {
+                this.messageInterval[deviceId] = this.setInterval(() => {
                     this.answerMessage(id, deviceId);
                 }, (Number(send_timeout.val) + 1) * 1000);
             }
@@ -1725,6 +1795,7 @@ class E2Openwebif extends utils.Adapter {
     async answerMessage(id, deviceId) {
         try {
             this.messageInterval[deviceId] && this.clearInterval(this.messageInterval[deviceId]);
+            this.messageInterval[deviceId] = null;
             const answer_message = await this.getRequest(`${cs.PATH.MESSAGEANSWER}`, deviceId);
             this.log_translator("debug", "Message answer", JSON.stringify(answer_message));
             if (answer_message && answer_message.result != null) {

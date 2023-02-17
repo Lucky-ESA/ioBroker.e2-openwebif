@@ -69,6 +69,7 @@
         "mode": "daemon",
         "type": "multimedia",
         "messagebox": true,
+        "blockly": true,
         "compact": true,
         "connectionType": "local",
         "dataSource": "poll",
