@@ -107,7 +107,8 @@
                 "ssh": false,
                 "sshuser": "root",
                 "sshpassword": "",
-                "mac": ""
+                "mac": "",
+                "picture": ""
             }
         ],
         "interval": 5,
@@ -117,7 +118,8 @@
         "errorinfo": "Error after start",
         "boottime": 20,
         "alexaToDevice": [],
-        "own_alexa": []
+        "own_alexa": [],
+        "icons": []
     },
     "objects": [],
     "instanceObjects": [

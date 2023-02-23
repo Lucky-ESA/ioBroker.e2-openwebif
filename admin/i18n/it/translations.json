@@ -62,5 +62,12 @@
     "Own Alexa data points": "Gestisci punti dati Alexa.",
     "OWN NAME": "Comando vocale Alexa",
     "OWN COMMAND": "Comando completo (es. /api/zap?sRef=1:0:19xxx)",
-    "Datapoint": "Data point"
+    "Datapoint": "Punto dati",
+    "Tab icons": "Crea icone",
+    "Info icons": "Carica l'icona della cartella.",
+    "iconname": "Nome dell'icona",
+    "ICONNAME": "Nome dell'icona (ad es. gmail)",
+    "Tab Hosts": "Crea IMAP`S",
+    "icon64": "Scegli l'icona",
+    "ICON64": "Scegli l'icona"
 }

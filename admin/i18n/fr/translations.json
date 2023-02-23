@@ -61,6 +61,13 @@
     "Info Alexa": "Les appareils doivent d'abord être enregistrés afin de pouvoir les sélectionner ici. ADAPTATEUR IOT REQUIS !",
     "Own Alexa data points": "Propres points de données Alexa.",
     "OWN NAME": "Commande vocale Alexa",
-    "OWN COMMAND": "Commande complète (ex. /api/zap?sRef=1:0:19xxx)",
-    "Datapoint": "Point de données"
+    "OWN COMMAND": "Commande complète (par exemple /api/zap?sRef=1:0:19xxx)",
+    "Datapoint": "Point de données",
+    "Tab icons": "Créer des icônes",
+    "Info icons": "Télécharger l'icône du dossier.",
+    "iconname": "Nom de l'icône",
+    "ICONNAME": "Nom de l'icône (par exemple, gmail)",
+    "Tab Hosts": "Créer des IMAP",
+    "icon64": "Choisissez l'icône",
+    "ICON64": "Choisissez l'icône"
 }

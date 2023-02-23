@@ -62,5 +62,12 @@
     "Own Alexa data points": "Własne punkty danych Alexa.",
     "OWN NAME": "Polecenie głosowe Alexy",
     "OWN COMMAND": "Kompletne polecenie (np. /api/zap?sRef=1:0:19xxx)",
-    "Datapoint": "Punkt widzenia"
+    "Datapoint": "Punkt danych",
+    "Tab icons": "Twórz ikony",
+    "Info icons": "Prześlij ikonę folderu.",
+    "iconname": "Nazwa ikony",
+    "ICONNAME": "Nazwa ikony (np. gmail)",
+    "Tab Hosts": "Utwórz IMAP",
+    "icon64": "Wybierz ikonę",
+    "ICON64": "Wybierz ikonę"
 }

@@ -62,5 +62,12 @@
     "Own Alexa data points": "拥有 Alexa 数据点。",
     "OWN NAME": "Alexa 语音命令",
     "OWN COMMAND": "完整命令（例如 /api/zap?sRef=1:0:19xxx）",
-    "Datapoint": "数据点"
+    "Datapoint": "数据点",
+    "Tab icons": "创建图标",
+    "Info icons": "上传文件夹图标。",
+    "iconname": "图标名称",
+    "ICONNAME": "图标名称（例如 gmail）",
+    "Tab Hosts": "创建 IMAP`S",
+    "icon64": "选择图标",
+    "ICON64": "选择图标"
 }

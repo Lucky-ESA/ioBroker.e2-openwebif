@@ -49,7 +49,7 @@
     "PASSWORD": "Password",
     "YOUR MAC": "MAC WOL",
     "Activate": "Activate/deactivate device",
-    "Activ":  "Active",
+    "Activ": "Active",
     "sshUser": "SSH User",
     "SSHUser": "SSH User (default root)",
     "SSHPASSWORD": "SSH Password",
@@ -62,5 +62,12 @@
     "Own Alexa data points": "Own Alexa data points.",
     "OWN NAME": "Alexa voice command",
     "OWN COMMAND": "Complete command (eg. /api/zap?sRef=1:0:19xxx)",
-    "Datapoint": "Data point"
+    "Datapoint": "Data point",
+    "Tab icons": "Create icons",
+    "Info icons": "Upload folder icon.",
+    "iconname": "Icon name",
+    "ICONNAME": "Icon name (e.g. gmail)",
+    "Tab Hosts": "Create IMAP`S",
+    "icon64": "Choose icon",
+    "ICON64": "Choose icon"
 }

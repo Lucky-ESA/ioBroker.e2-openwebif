@@ -62,5 +62,12 @@
     "Own Alexa data points": "Собственные точки данных Alexa.",
     "OWN NAME": "Голосовая команда Alexa",
     "OWN COMMAND": "Полная команда (например, /api/zap?sRef=1:0:19xxx)",
-    "Datapoint": "Точка данных"
+    "Datapoint": "Точка данных",
+    "Tab icons": "Создание иконок",
+    "Info icons": "Загрузить значок папки.",
+    "iconname": "Имя значка",
+    "ICONNAME": "Название значка (например, gmail)",
+    "Tab Hosts": "Создать IMAP`S",
+    "icon64": "Выберите значок",
+    "ICON64": "Выберите значок"
 }

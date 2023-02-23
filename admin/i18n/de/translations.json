@@ -62,5 +62,12 @@
     "Own Alexa data points": "Eigener Alexa Datenpunkt.",
     "OWN NAME": "Alexa Sprachbefehl",
     "OWN COMMAND": "Kompletter Befehl (b.Bsp. /api/zap?sRef=1:0:19xxx)",
-    "Datapoint": "Datenpunkt"
+    "Datapoint": "Datenpunkt",
+    "Tab icons": "Symbole erstellen",
+    "Info icons": "Ordnersymbol hochladen.",
+    "iconname": "Symbolname",
+    "ICONNAME": "Name des Symbols (z. Bsp. Google Mail)",
+    "Tab Hosts": "IMAPs erstellen",
+    "icon64": "Symbol auswählen",
+    "ICON64": "Symbol auswählen"
 }

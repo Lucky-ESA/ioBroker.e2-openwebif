@@ -62,5 +62,12 @@
     "Own Alexa data points": "Bezit Alexa-datapunten.",
     "OWN NAME": "Alexa-spraakopdracht",
     "OWN COMMAND": "Volledige opdracht (bijv. /api/zap?sRef=1:0:19xxx)",
-    "Datapoint": "Datapunt"
+    "Datapoint": "Data punt",
+    "Tab icons": "Pictogrammen maken",
+    "Info icons": "Mappictogram uploaden.",
+    "iconname": "Icoon naam",
+    "ICONNAME": "Pictogramnaam (bijv. Gmail)",
+    "Tab Hosts": "IMAP`S maken",
+    "icon64": "Kies pictogram",
+    "ICON64": "Kies pictogram"
 }

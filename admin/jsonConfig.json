@@ -20,105 +20,143 @@
                         {
                             "type": "checkbox",
                             "attr": "activ",
-                            "width": "5%",
                             "title": "Activ",
                             "tooltip": "Activate",
                             "filter": false,
                             "sort": false,
-                            "default": false
+                            "default": false,
+                            "style": {
+                                "textAlign": "center",
+                                "width": 60
+                            }
                         },
                         {
                             "type": "text",
                             "attr": "ip",
-                            "width": "20%",
                             "title": "IP",
                             "tooltip": "Device IP",
                             "filter": true,
                             "sort": true,
-                            "default": "127.0.0.1"
+                            "default": "127.0.0.1",
+                            "style": {
+                                "width": 150
+                            }
                         },
                         {
                             "type": "number",
                             "attr": "port",
-                            "width": "5%",
                             "title": "Port",
                             "tooltip": "Port",
                             "filter": false,
                             "sort": false,
-                            "default": 80
-                            
+                            "default": 80,
+                            "style": {
+                                "textAlign": "center",
+                                "width": 60
+                            }
                         },
                         {
                             "type": "text",
                             "attr": "user",
-                            "width": "10%",
                             "title": "User",
                             "tooltip": "User",
                             "filter": false,
                             "sort": false,
-                            "default": "root"
+                            "default": "root",
+                            "style": {
+                                "width": 100
+                            }
                         },
                         {
                             "type": "password",
                             "attr": "password",
-                            "width": "10%",
                             "title": "PASSWORD",
                             "tooltip": "Password",
                             "filter": false,
                             "visible": true,
                             "sort": false,
-                            "default": ""
+                            "default": "",
+                            "style": {
+                                "width": 150
+                            }
                         },
                         {
                             "type": "checkbox",
                             "attr": "https",
-                            "width": "5%",
                             "title": "HTTPS",
                             "tooltip": "Use HTTPS",
                             "filter": false,
                             "sort": false,
-                            "default": false
+                            "default": false,
+                            "style": {
+                                "textAlign": "center",
+                                "width": 60
+                            }
                         },
                         {
                             "type": "checkbox",
                             "attr": "ssh",
-                            "width": "5%",
                             "title": "SSH",
                             "tooltip": "SSH connection",
                             "filter": false,
                             "sort": false,
-                            "default": false
+                            "default": false,
+                            "style": {
+                                "textAlign": "center",
+                                "width": 60
+                            }
                         },
                         {
                             "type": "text",
                             "attr": "sshuser",
-                            "width": "10%",
                             "title": "sshUser",
                             "tooltip": "SSHUser",
                             "filter": false,
                             "sort": false,
-                            "default": "root"
+                            "default": "root",
+                            "style": {
+                                "width": 100
+                            }
                         },
                         {
                             "type": "password",
                             "attr": "sshpassword",
-                            "width": "10%",
                             "title": "SSHPASSWORD",
                             "tooltip": "SSHPassword",
                             "filter": false,
                             "visible": true,
                             "sort": false,
-                            "default": ""
+                            "default": "",
+                            "style": {
+                                "width": 150
+                            }
                         },
                         {
                             "type": "text",
                             "attr": "mac",
-                            "width": "20%",
                             "title": "YOUR MAC",
                             "tooltip": "MAC",
                             "filter": false,
                             "sort": false,
-                            "default": ""
+                            "default": "",
+                            "style": {
+                                "width": 150
+                            }
+                        },
+                        {
+                            "type": "selectSendTo",
+                            "title": "icon64",
+                            "tooltip": "ICON64",
+                            "attr": "picture",
+                            "disabled": "!data.activ",
+                            "jsonData": "{\"icon\":{\"icons\":${JSON.stringify(globalData.icons)}}}",
+                            "command": "getIconList",
+                            "width": 200,
+                            "alsoDependsOn": ["icons"],
+                            "style": {
+                                "textAlign": "center",
+                                "width": 200
+                            }
                         }
                     ]
                 },
@@ -223,12 +261,7 @@
                             "width": "100px",
                             "filter": false,
                             "sort": false,
-                            "alsoDependsOn":[
-                                "alexaToDevice",
-                                "device",
-                                "devices",
-                                "alexa"
-                            ]
+                            "alsoDependsOn": ["alexaToDevice", "device", "devices", "alexa"]
                         },
                         {
                             "type": "text",
@@ -572,13 +605,7 @@
                             "filter": false,
                             "jsonData": "{\"alexaid\":{\"own_command\":\"${data.own_command}\",\"own_name\":\"${data.own_name}\",\"own_device\":\"${data.own_device}\",\"own_datapoint\":\"${data.own_datapoint}\",\"alexaToDevice\":${JSON.stringify(globalData.own_alexa)}}}",
                             "sort": false,
-                            "alsoDependsOn":[
-                                "own_alexa",
-                                "own_device",
-                                "own_name",
-                                "devices",
-                                "own_command"
-                            ]
+                            "alsoDependsOn": ["own_alexa", "own_device", "own_name", "devices", "own_command"]
                         },
                         {
                             "type": "selectSendTo",
@@ -590,12 +617,7 @@
                             "width": "20%",
                             "filter": false,
                             "sort": false,
-                            "alsoDependsOn":[
-                                "own_alexa",
-                                "own_device",
-                                "devices",
-                                "own_alexa"
-                            ]
+                            "alsoDependsOn": ["own_alexa", "own_device", "devices", "own_alexa"]
                         },
                         {
                             "type": "text",
@@ -616,6 +638,49 @@
                             "default": "",
                             "filter": false,
                             "sort": false
+                        }
+                    ]
+                }
+            }
+        },
+        "tab3": {
+            "type": "panel",
+            "label": "Tab icons",
+            "items": {
+                "_headerAlexa": {
+                    "type": "header",
+                    "text": "Info icons",
+                    "size": 2
+                },
+                "icons": {
+                    "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "noDelete": false,
+                    "type": "table",
+                    "style": {
+                        "textAlign": "center"
+                    },
+                    "items": [
+                        {
+                            "type": "text",
+                            "attr": "iconname",
+                            "width": "50%",
+                            "title": "iconname",
+                            "tooltip": "ICONNAME",
+                            "filter": true,
+                            "sort": true,
+                            "default": ""
+                        },
+                        {
+                            "type": "image",
+                            "attr": "picture",
+                            "width": "50%",
+                            "title": "upload",
+                            "tooltip": "UPLOAD",
+                            "accept": "image/*",
+                            "base64": true,
+                            "crop": true
                         }
                     ]
                 }
