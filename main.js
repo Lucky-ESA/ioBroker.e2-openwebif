@@ -104,7 +104,7 @@ class E2Openwebif extends utils.Adapter {
                 try {
                     this.lang = obj.common.language === this.lang ? this.lang : obj.common.language;
                 } catch (e) {
-                    this.sendLucky(e, "try getForeignObjectAsync");
+                    this.log_translator("error", "try", `getForeignObjectAsync: ${e}`);
                 }
             }
             for (const element of this.config.devices) {
@@ -119,7 +119,7 @@ class E2Openwebif extends utils.Adapter {
                     // @ts-ignore
                     this.alexa[id] = this.config.alexaToDevice.find((alex) => alex["device"] === element.ip);
                 } catch (e) {
-                    this.sendLucky(e, "try find");
+                    this.log_translator("error", "try", `find: ${e}`);
                     this.log_translator("debug", "Error", e, element.ip);
                 }
                 if (element.password != "" && element.password.match(/<LUCKY-ESA>/gi) != null) {
@@ -282,7 +282,7 @@ class E2Openwebif extends utils.Adapter {
             }, 60 * 60 * 24 * 1000);
             stop = false;
         } catch (e) {
-            this.sendLucky(e, "try onReady");
+            this.log_translator("error", "try", `onReady: ${e}`);
         }
     }
 
@@ -358,7 +358,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.log_translator("debug", "Delete Alexa Datapoints", JSON.stringify(all_dp));
         } catch (error) {
-            this.sendLucky(error, "try checkOwnAlexa");
+            this.log_translator("error", "try", `checkOwnAlexa: ${error}`);
         }
     }
 
@@ -386,7 +386,7 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
         } catch (error) {
-            this.sendLucky(error, "try onObjectChange");
+            this.log_translator("error", "try", `onObjectChange: ${error}`);
         }
     }
 
@@ -441,7 +441,7 @@ class E2Openwebif extends utils.Adapter {
             }
             return false;
         } catch (error) {
-            this.sendLucky(error, "try configcheck");
+            this.log_translator("error", "try", `configcheck: ${error}`);
         }
     }
 
@@ -461,7 +461,7 @@ class E2Openwebif extends utils.Adapter {
             adapterconfigs = this.adapterConfig;
             _obj = JSON.parse(JSON.stringify(obj));
         } catch (error) {
-            this.sendLucky(error, "try onMessage");
+            this.log_translator("error", "try", `onMessage: ${error}`);
             this.sendTo(obj.from, obj.command, [], obj.callback);
             delete this.double_call[obj._id];
             return;
@@ -518,7 +518,7 @@ class E2Openwebif extends utils.Adapter {
                         }
                     } catch (error) {
                         delete this.double_call[obj._id];
-                        this.sendLucky(error, "try onMessage");
+                        this.log_translator("error", "try", `onMessage: ${error}`);
                         this.sendTo(obj.from, obj.command, [], obj.callback);
                     }
                 }
@@ -551,7 +551,7 @@ class E2Openwebif extends utils.Adapter {
                             this.sendTo(obj.from, obj.command, [], obj.callback);
                         }
                     } catch (error) {
-                        this.sendLucky(error, "try onMessage");
+                        this.log_translator("error", "try", `onMessage: ${error}`);
                         this.sendTo(obj.from, obj.command, [], obj.callback);
                         delete this.double_call[obj._id];
                     }
@@ -634,7 +634,7 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
         } catch (e) {
-            this.sendLucky(e, "try checkDeviceFolder");
+            this.log_translator("error", "try", `checkDeviceFolder: ${e}`);
         }
     }
 
@@ -645,7 +645,7 @@ class E2Openwebif extends utils.Adapter {
                 this.webif[id] = true;
             }
         } catch (e) {
-            this.sendLucky(e, "try setWebIf");
+            this.log_translator("error", "try", `setWebIf: ${e}`);
         }
     }
 
@@ -682,7 +682,7 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
         } catch (e) {
-            this.sendLucky(e, "try checkDevice");
+            this.log_translator("error", "try", `checkDevice: ${e}`);
         }
     }
 
@@ -715,7 +715,7 @@ class E2Openwebif extends utils.Adapter {
                 }, times * 1000);
             }
         } catch (e) {
-            this.sendLucky(e, "try setNewInterval");
+            this.log_translator("error", "try", `setNewInterval: ${e}`);
         }
     }
 
@@ -726,7 +726,7 @@ class E2Openwebif extends utils.Adapter {
                 this.checkDevice(id);
             }
         } catch (e) {
-            this.sendLucky(e, "try checkdeepstandby");
+            this.log_translator("error", "try", `checkdeepstandby: ${e}`);
         }
     }
 
@@ -859,7 +859,7 @@ class E2Openwebif extends utils.Adapter {
             });
             this.inProgress(false, "Unknown", id);
         } catch (e) {
-            this.sendLucky(e, "try updateDevice");
+            this.log_translator("error", "try", `updateDevice: ${e}`);
             this.inProgress(false, "Unknown", id);
         }
     }
@@ -880,7 +880,7 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
         } catch (e) {
-            this.sendLucky(e, "try updateDeviceInfo");
+            this.log_translator("error", "try", `updateDeviceInfo: ${e}`);
         }
     }
 
@@ -901,7 +901,7 @@ class E2Openwebif extends utils.Adapter {
             }
             return `${("0" + hours).slice(-2)}:${("0" + minutes).slice(-2)}:${("0" + seconds).slice(-2)}`;
         } catch (e) {
-            this.sendLucky(e, "try convertRemaining");
+            this.log_translator("error", "try", `convertRemaining: ${e}`);
             return "0";
         }
     }
@@ -923,7 +923,7 @@ class E2Openwebif extends utils.Adapter {
                     return false;
                 });
         } catch (e) {
-            this.sendLucky(e, "try getRequest");
+            this.log_translator("error", "try", `getRequest: ${e}`);
             return "0";
         }
     }
@@ -943,7 +943,7 @@ class E2Openwebif extends utils.Adapter {
             sleepTimer && this.clearTimeout(sleepTimer);
             callback();
         } catch (e) {
-            this.sendLucky(e, "try onUnload");
+            this.log_translator("error", "try", `onUnload: ${e}`);
             callback();
         }
     }
@@ -960,7 +960,7 @@ class E2Openwebif extends utils.Adapter {
                 this.setAckFlag(id, res, { val: false });
             }
         } catch (e) {
-            this.sendLucky(e, "try sendCommand");
+            this.log_translator("error", "try", `sendCommand: ${e}`);
         }
     }
 
@@ -1104,7 +1104,7 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
         } catch (e) {
-            this.sendLucky(e, "try onStateChange");
+            this.log_translator("error", "try", `onStateChange: ${e}`);
         }
     }
 
@@ -1205,7 +1205,7 @@ class E2Openwebif extends utils.Adapter {
                             });
                         }
                     } catch (e) {
-                        this.sendLucky(e, "try deletesnapshot foreach");
+                        this.log_translator("error", "try", `deletesnapshot foreach: ${e}`);
                     }
                 });
                 //end cleanup img/ folder and datapoints
@@ -1235,7 +1235,7 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
         } catch (e) {
-            this.sendLucky(e, "try deletesnapshot");
+            this.log_translator("error", "try", `deletesnapshot: ${e}`);
         }
     }
 
@@ -1322,7 +1322,7 @@ class E2Openwebif extends utils.Adapter {
                                                 reject(error);
                                             }
                                         } catch (e) {
-                                            this.sendLucky(e, "try writeFile createsnapshot");
+                                            this.log_translator("error", "try", `writeFile createsnapshot: ${e}`);
                                         }
                                     });
                                     resolve(true);
@@ -1337,7 +1337,7 @@ class E2Openwebif extends utils.Adapter {
                     }
                 })
                 .catch((e) => {
-                    this.sendLucky(e, "try axiosSnapshot");
+                    this.log_translator("error", "try", `axiosSnapshot: ${e}`);
                 });
             this.log_translator("debug", "Response", res);
             if (res) {
@@ -1351,7 +1351,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log_translator("debug", "Snapshot not created");
             }
         } catch (e) {
-            this.sendLucky(e, "try createsnapshot");
+            this.log_translator("error", "try", `createsnapshot: ${e}`);
         }
     }
 
@@ -1450,7 +1450,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try commandTimer");
+            this.log_translator("error", "try", `commandTimer: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1472,7 +1472,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try reloadBouquest");
+            this.log_translator("error", "try", `reloadBouquest: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1491,7 +1491,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log_translator("info", "Cannot set volume", "?", deviceId);
             }
         } catch (e) {
-            this.sendLucky(e, "try setVolumen");
+            this.log_translator("error", "try", `setVolumen: ${e}`);
         }
     }
 
@@ -1537,7 +1537,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log_translator("info", "Cannot set powerstate", "?");
             }
         } catch (e) {
-            this.sendLucky(e, "try setPowerStates");
+            this.log_translator("error", "try", `setPowerStates: ${e}`);
         }
     }
 
@@ -1570,7 +1570,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try createRecordingEPG");
+            this.log_translator("error", "try", `createRecordingEPG: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1596,7 +1596,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try setRecordingInfoEPG");
+            this.log_translator("error", "try", `setRecordingInfoEPG: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1640,7 +1640,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try setChannelInfoEPG");
+            this.log_translator("error", "try", `setChannelInfoEPG: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1661,7 +1661,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try setMovies");
+            this.log_translator("error", "try", `setMovies: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1688,7 +1688,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.setAckFlag(id, { result: true });
         } catch (e) {
-            this.sendLucky(e, "try changeStatus");
+            this.log_translator("error", "try", `changeStatus: ${e}`);
         }
     }
 
@@ -1713,7 +1713,7 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
         } catch (e) {
-            this.sendLucky(e, "try wakeonlan");
+            this.log_translator("error", "try", `wakeonlan: ${e}`);
         }
     }
 
@@ -1741,7 +1741,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try sentRequest");
+            this.log_translator("error", "try", `sentRequest: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1782,7 +1782,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try sendMessageToDevice");
+            this.log_translator("error", "try", `sendMessageToDevice: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1803,7 +1803,7 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
         } catch (e) {
-            this.sendLucky(e, "try answerMessage");
+            this.log_translator("error", "try", `answerMessage: ${e}`);
         }
     }
 
@@ -1825,7 +1825,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
-            this.sendLucky(e, "try setFolder");
+            this.log_translator("error", "try", `setFolder: ${e}`);
             this.inProgress(false, "Unknown", deviceId);
         }
     }
@@ -1859,7 +1859,7 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
         } catch (e) {
-            this.sendLucky(e, "try setZAPAndEPG");
+            this.log_translator("error", "try", `setZAPAndEPG: ${e}`);
         }
     }
 
@@ -1893,7 +1893,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log_translator("debug", "The Datapoint State is empty");
             }
         } catch (e) {
-            this.sendLucky(e, "try setBouquestAndEPG");
+            this.log_translator("error", "try", `setBouquestAndEPG: ${e}`);
         }
     }
 
@@ -1951,7 +1951,6 @@ class E2Openwebif extends utils.Adapter {
                     this.log_translator("debug", "Data", data);
                 } catch (e) {
                     this.log_translator("info", "Cannot read file", boxfile, e);
-                    this.sendLucky(e, "try connect_ssh existsSync");
                     return;
                 }
             } else {
@@ -2050,12 +2049,12 @@ class E2Openwebif extends utils.Adapter {
                         });
                     }
                 } catch (e) {
-                    this.sendLucky(e, "try connect_ssh connect");
+                    this.log_translator("error", "try", `connect_ssh connect: ${e}`);
                 }
             });
             ssh2[deviceId].close();
         } catch (e) {
-            this.sendLucky(e, "try connect_ssh");
+            this.log_translator("error", "try", `connect_ssh: ${e}`);
         }
     }
 
@@ -2082,13 +2081,13 @@ class E2Openwebif extends utils.Adapter {
                         });
                         this.setAckFlag(id, { result: true });
                     } catch (e) {
-                        this.sendLucky(e, "try sendSSH connect");
+                        this.log_translator("error", "try", `sendSSH connect: ${e}`);
                     }
                 });
                 ssh2[deviceId].close();
             }
         } catch (e) {
-            this.sendLucky(e, "try sendSSH");
+            this.log_translator("error", "try", `sendSSH: ${e}`);
         }
     }
 
@@ -2180,50 +2179,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log_translator("debug", "Cannot read the timerlist", box);
             }
         } catch (e) {
-            this.sendLucky(e, "try checkRecording");
-        }
-    }
-
-    async sendLucky(error, func) {
-        try {
-            this.log_translator("warn", "Error", func, error);
-            if (this.config.lucky) {
-                const obj = await this.getForeignObjectAsync(`system.host.${this.host}`);
-                const npm = await this.getForeignStateAsync(`system.host.${this.host}.versions.npmCurrent`);
-                let npmVal;
-                if (npm && npm.val) {
-                    npmVal = npm.val;
-                } else {
-                    npmVal = "UNKNOWN";
-                }
-                if (obj && obj.common && obj.common) {
-                    const defaultHeaders = {
-                        "x-Adapter": "Openwebif",
-                        "x-Adapter-Version": this.version,
-                        "x-contoller": obj.common.installedVersion,
-                        "x-Node": obj.native.process.versions.node,
-                        "x-NPM": npmVal,
-                        "x-Language": this.lang,
-                        "x-Errorinfo": this.config.errorinfo,
-                        "x-ErrorReport": "TryError",
-                        "x-Function": func,
-                    };
-                    const response = await axios({
-                        method: "get",
-                        url: "https://luckyskills.de/ioBroker/openwebif/",
-                        headers: defaultHeaders,
-                        params: {
-                            Report: "ErrorReport",
-                        },
-                        data: {
-                            error: JSON.stringify(error),
-                        },
-                    });
-                    this.log_translator("debug", "response sendLucky", JSON.stringify(response.data));
-                }
-            }
-        } catch (error) {
-            this.log_translator("error", "sendLucky", error);
+            this.log_translator("error", "try", `checkRecording: ${e}`);
         }
     }
 
@@ -2237,7 +2193,7 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
         } catch (e) {
-            this.sendLucky(e, "try setAckFlag");
+            this.log_translator("error", "try", `setAckFlag: ${e}`);
         }
     }
 
@@ -2251,7 +2207,7 @@ class E2Openwebif extends utils.Adapter {
             }
             return result;
         } catch (e) {
-            this.sendLucky(e, "try makeRandomString");
+            this.log_translator("error", "try makeRandomString", `: ${e}`);
             return "gzW5M";
         }
     }
@@ -2280,7 +2236,7 @@ class E2Openwebif extends utils.Adapter {
                 this.recordInterval[deviceId] = null;
             }
         } catch (e) {
-            this.sendLucky(e, "try deleteInterval");
+            this.log_translator("error", "try deleteInterval", `: ${e}`);
         }
     }
 
@@ -2360,22 +2316,22 @@ class E2Openwebif extends utils.Adapter {
                 });
             }
         } catch (e) {
-            this.sendLucky(e, "try cleanupQuality");
+            this.log_translator("error", "try cleanupQuality", `: ${e}`);
         }
     }
 
-    log_translator(level, text, merge_array, merge_array2, merge_array3) {
+    log_translator(level, text, merge_1, merge_2, merge_3) {
         try {
             const loglevel = !!this.log[level];
             if (loglevel && level != "debug") {
                 //if (loglevel) {
                 if (tl.trans[text] != null) {
-                    if (merge_array3) {
-                        this.log[level](format(tl.trans[text][this.lang], merge_array, merge_array2, merge_array3));
-                    } else if (merge_array2) {
-                        this.log[level](format(tl.trans[text][this.lang], merge_array, merge_array2));
-                    } else if (merge_array) {
-                        this.log[level](format(tl.trans[text][this.lang], merge_array));
+                    if (merge_3) {
+                        this.log[level](format(tl.trans[text][this.lang], merge_1, merge_2, merge_3));
+                    } else if (merge_2) {
+                        this.log[level](format(tl.trans[text][this.lang], merge_1, merge_2));
+                    } else if (merge_1) {
+                        this.log[level](format(tl.trans[text][this.lang], merge_1));
                     } else {
                         this.log[level](tl.trans[text][this.lang]);
                     }
@@ -2384,7 +2340,25 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
         } catch (e) {
-            this.sendLucky(e, "try log_translator");
+            this.log.error("try log_translator: " + e);
+        }
+    }
+
+    helper_translator(text, merge, merge_1) {
+        try {
+            if (tl.trans[text][this.lang]) {
+                if (merge_1) {
+                    return format(tl.trans[text][this.lang], merge, merge_1);
+                } else if (merge) {
+                    return format(tl.trans[text][this.lang], merge);
+                } else {
+                    return tl.trans[text][this.lang];
+                }
+            } else {
+                return tl.trans["Unknown"][this.lang];
+            }
+        } catch (e) {
+            this.log.error("try helper_translator: " + e);
         }
     }
 }

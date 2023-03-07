@@ -17,7 +17,6 @@
                 "uk": "початковий випуск"
             }
         },
-        "title": "OpenWebIf",
         "titleLang": {
             "en": "OpenWebIf",
             "de": "OpenWebif",
@@ -44,20 +43,8 @@
             "uk": "Пульт дистанційного керування OpenWebIf",
             "zh-cn": "遥感"
         },
-        "authors": [
-            "Lucky-ESA <github@luckyskills.de>"
-        ],
-        "keywords": [
-            "e2",
-            "openwebif",
-            "webif",
-            "enigma2",
-            "remote",
-            "control",
-            "vupuls",
-            "gigablue",
-            "dreambox"
-        ],
+        "authors": ["Lucky-ESA <github@luckyskills.de>"],
+        "keywords": ["e2", "openwebif", "webif", "enigma2", "remote", "control", "vupuls", "gigablue", "dreambox"],
         "license": "MIT",
         "platform": "Javascript/Node.js",
         "main": "main.js",
@@ -87,14 +74,8 @@
             }
         ]
     },
-    "encryptedNative": [
-        "password",
-        "sshpassword"
-    ],
-    "protectedNative": [
-        "password",
-        "sshpassword"
-    ],
+    "encryptedNative": ["password", "sshpassword"],
+    "protectedNative": ["password", "sshpassword"],
     "native": {
         "devices": [
             {
@@ -114,8 +95,6 @@
         "interval": 5,
         "your_ip": "",
         "simple_api": "",
-        "lucky": false,
-        "errorinfo": "Error after start",
         "boottime": 20,
         "alexaToDevice": [],
         "own_alexa": [],

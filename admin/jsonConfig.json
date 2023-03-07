@@ -201,20 +201,6 @@
                     "lg": 3,
                     "adapter": "simple-api",
                     "default": ""
-                },
-                "lucky": {
-                    "type": "checkbox",
-                    "newLine": true,
-                    "sm": 6,
-                    "label": "Send Lucky",
-                    "default": false
-                },
-                "errorinfo": {
-                    "type": "text",
-                    "label": "error info",
-                    "sm": 6,
-                    "newLine": true,
-                    "default": ""
                 }
             }
         },

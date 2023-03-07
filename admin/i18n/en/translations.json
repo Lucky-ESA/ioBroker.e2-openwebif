@@ -10,8 +10,6 @@
     "Your IP": "Your IP",
     "source": "Choose a SIMPLE-API instance",
     "MAC": "MAC address for WOL (Format xx:xx:xx:xx:xx)",
-    "Send Lucky": "Send error to LUCKY-ESA",
-    "error info": "Error info for LUCKY ESA",
     "Tab Device": "Device settings",
     "Tab Alexa": "Alexa settings",
     "Activate alexa": "Active",

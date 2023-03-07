@@ -1,43 +1,57 @@
 ![Logo](admin/e2-openwebif.png)
+
 # ioBroker.e2-openwebif
 
-[![NPM version](https://img.shields.io/npm/v/iobroker.e2-openwebif.svg)](https://www.npmjs.com/package/iobroker.e2-openwebif)
-[![Downloads](https://img.shields.io/npm/dm/iobroker.e2-openwebif.svg)](https://www.npmjs.com/package/iobroker.e2-openwebif)
-![Number of Installations](https://iobroker.live/badges/e2-openwebif-installed.svg)
-![Current version in stable repository](https://iobroker.live/badges/e2-openwebif-stable.svg)
+[![GitHub license](https://img.shields.io/github/license/Lucky-ESA/ioBroker.e2-openwebif)](https://github.com/Lucky-ESA/ioBroker.e2-openwebif/blob/main/LICENSE)
+[![NPM version](https://img.shields.io/npm/v/ioBroker.e2-openwebif.svg)](https://www.npmjs.com/package/ioBroker.e2-openwebif)
+[![Downloads](https://img.shields.io/npm/dm/ioBroker.e2-openwebif.svg)](https://www.npmjs.com/package/ioBroker.e2-openwebif)
+![Number of Installations](https://iobroker.live/badges/imap-installed.svg)</br>
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Lucky-ESA/ioBroker.e2-openwebif)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/Lucky-ESA/ioBroker.e2-openwebif/latest)
+![GitHub last commit](https://img.shields.io/github/last-commit/Lucky-ESA/ioBroker.e2-openwebif)
+![GitHub issues](https://img.shields.io/github/issues/Lucky-ESA/ioBroker.e2-openwebif)
 
 [![NPM](https://nodei.co/npm/iobroker.e2-openwebif.png?downloads=true)](https://nodei.co/npm/iobroker.e2-openwebif/)
 
-**Tests:** ![Test and Release](https://github.com/Lucky-ESA/ioBroker.e2-openwebif/workflows/Test%20and%20Release/badge.svg)
+**Tests:** </br>
+![Test and Release](https://github.com/Lucky-ESA/ioBroker.e2-openwebif/workflows/Test%20and%20Release/badge.svg)
+[![CodeQL](https://github.com/Lucky-ESA/ioBroker.e2-openwebif/actions/workflows/codeql.yml/badge.svg)](https://github.com/Lucky-ESA/ioBroker.e2-openwebif/actions/workflows/codeql.yml)
+![Snyk Vulnerabilities for GitHub Repo](https://img.shields.io/snyk/vulnerabilities/github/Lucky-ESA/ioBroker.e2-openwebif)
 
 ## e2-openwebif adapter for ioBroker
 
 Remote control for your Enigma2 Receivers.
 
 ## Requirements
-* Openwebif must be installed
-* Adapter simple-api
-* Hijack and Token must be disabled
+
+-   Openwebif must be installed
+-   Adapter simple-api
+-   Hijack and Token must be disabled
 
 ## Requirements optionale
-* SSH access must be activated
-* SSH User root
-* SSH Password for root user
+
+-   SSH access must be activated
+-   SSH User root
+-   SSH Password for root user
 
 ## Tested with
-* VU Ultimo with OpenATV 7.2
-* GigaBlue UHD Quad 4K with OpenATV 6.4
+
+-   VU Ultimo with OpenATV 7.2
+-   GigaBlue UHD Quad 4K with OpenATV 6.4
 
 ## Changelog
+
 <!--
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
 
 ### **WORK IN PROGRESS**
-* (Lucky-ESA) initial release
+
+-   (Lucky-ESA) initial release
 
 ## License
+
 MIT License
 
 Copyright (c) 2023 Lucky-ESA <github@luckyskills.de>
