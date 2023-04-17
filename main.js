@@ -1922,7 +1922,9 @@ class E2Openwebif extends utils.Adapter {
                 this.log_translator("info", "Cannot found SIMPLE-API", this.config.simple_api);
                 return;
             } else {
-                port = simple_api.native.port;
+                if (simple_api.native.port != port) {
+                    port = simple_api.native.port;
+                }
             }
             if (simple_api.native.auth || simple_api.native.secure) {
                 this.log_translator("info", "Use SIMPLE-API without authorization", this.config.simple_api);
@@ -1991,6 +1993,7 @@ class E2Openwebif extends utils.Adapter {
                     } else if (resp != "iobroker" && this.devicesID[deviceId].ssh) {
                         if (resp != "iobroker missing") {
                             resp = await this.commandToSSH2(ssh2[deviceId], `echo '${data}' > /home/${scriptname}.sh`);
+                            this.log_translator("debug", "Response", resp);
                             resp = await this.commandToSSH2(ssh2[deviceId], `chmod 775 /home/${scriptname}.sh`);
                             resp = resp.replace(/(\r\n|\r|\n)/g, "");
                             if (resp === "OK") {
@@ -2219,7 +2222,9 @@ class E2Openwebif extends utils.Adapter {
 
     sleep(ms) {
         return new Promise((resolve) => {
-            sleepTimer = setTimeout(resolve, ms);
+            sleepTimer = this.setTimeout(() => {
+                resolve(true);
+            }, ms);
         });
     }
 
