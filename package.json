@@ -27,7 +27,11 @@
     "node": ">= 16"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@iobroker/adapter-core": "^3.0.4",
+=======
+    "@iobroker/adapter-core": "^3.0.3",
+>>>>>>> 68aed9c4abfaca8c99df5ec0baefdab88abdaa1c
     "json-bigint": "^1.0.0",
     "ssh2-promise": "^1.0.3",
     "wol": "^1.0.7"
@@ -40,6 +44,7 @@
     "@iobroker/adapter-dev": "^1.2.0",
     "@iobroker/testing": "^4.1.0",
     "@tsconfig/node16": "^16.1.1",
+<<<<<<< HEAD
     "@types/chai": "^4.3.10",
     "@types/chai-as-promised": "^7.1.8",
     "@types/mocha": "^10.0.4",
@@ -50,12 +55,28 @@
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "eslint": "^8.53.0",
+=======
+    "@types/chai": "^4.3.9",
+    "@types/chai-as-promised": "^7.1.6",
+    "@types/mocha": "^10.0.3",
+    "@types/node": "^20.5.7",
+    "@types/proxyquire": "^1.3.28",
+    "@types/sinon": "^10.0.16",
+    "@types/sinon-chai": "^3.2.9",
+    "chai": "^4.3.10",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^8.52.0",
+>>>>>>> 68aed9c4abfaca8c99df5ec0baefdab88abdaa1c
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
     "mocha": "^10.2.0",
     "prettier": "^3.0.3",
     "proxyquire": "^2.1.3",
+<<<<<<< HEAD
     "sinon": "^17.0.1",
+=======
+    "sinon": "^16.0.0",
+>>>>>>> 68aed9c4abfaca8c99df5ec0baefdab88abdaa1c
     "sinon-chai": "^3.7.0",
     "typescript": "~5.2.2"
   },
