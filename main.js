@@ -403,7 +403,7 @@ class E2Openwebif extends utils.Adapter {
         try {
             let isdecode = false;
             // @ts-ignore
-            const adapterconfigs = this.adapterConfig;
+            const adapterconfigs = await this.getForeignObjectAsync(`system.adapter.${this.namespace}`);
             const device_array = [];
             let count = 0;
             if (adapterconfigs && adapterconfigs.native && adapterconfigs.native.devices) {
@@ -433,10 +433,13 @@ class E2Openwebif extends utils.Adapter {
             }
             if (isdecode) {
                 this.log_translator("info", "Encrypt");
-                if (adapterconfigs.native.alexaToDevice[0] === null) {
-                    adapterconfigs.native.alexaToDevice = [];
+                if (adapterconfigs == null || adapterconfigs.native.alexaToDevice[0] === null) {
+                    return;
                 }
-                this.updateConfig(adapterconfigs);
+                await this.extendForeignObjectAsync(`system.adapter.${this.namespace}`, {
+                    native: adapterconfigs ? adapterconfigs.native : [],
+                });
+                //this.updateConfig(adapterconfigs);
                 return true;
             }
             return false;
