@@ -277,9 +277,12 @@ class E2Openwebif extends utils.Adapter {
             }
             this.cleanupQuality();
             this.checkDeviceFolder();
-            this.qualityInterval = this.setInterval(() => {
-                this.cleanupQuality();
-            }, 60 * 60 * 24 * 1000);
+            this.qualityInterval = this.setInterval(
+                () => {
+                    this.cleanupQuality();
+                },
+                60 * 60 * 24 * 1000,
+            );
             stop = false;
         } catch (e) {
             this.log_translator("error", "try", `onReady: ${e}`);
@@ -402,7 +405,6 @@ class E2Openwebif extends utils.Adapter {
     async configcheck() {
         try {
             let isdecode = false;
-            // @ts-ignore
             const adapterconfigs = await this.getForeignObjectAsync(`system.adapter.${this.namespace}`);
             const device_array = [];
             let count = 0;
@@ -1779,9 +1781,12 @@ class E2Openwebif extends utils.Adapter {
                 await this.sleep(200);
                 const res = await this.getRequest(`${cs.PATH.COMMAND}108`, deviceId);
                 this.log_translator("debug", "Command 108", JSON.stringify(res));
-                this.messageInterval[deviceId] = this.setInterval(() => {
-                    this.answerMessage(id, deviceId);
-                }, (Number(send_timeout.val) + 1) * 1000);
+                this.messageInterval[deviceId] = this.setInterval(
+                    () => {
+                        this.answerMessage(id, deviceId);
+                    },
+                    (Number(send_timeout.val) + 1) * 1000,
+                );
             }
             this.inProgress(false, "Unknown", deviceId);
         } catch (e) {
