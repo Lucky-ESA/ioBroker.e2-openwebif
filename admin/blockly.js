@@ -266,6 +266,19 @@ Blockly.Words["e2-openwebif_help"] = {
     uk: "https://github.com/Lucky-ESA/ioBroker.e2-openwebif/blob/master/README.md",
     "zh-cn": "https://github.com/Lucky-ESA/ioBroker.e2-openwebif/blob/master/README.md",
 };
+Blockly.Words["no_instance_found"] = {
+    en: "No instance found",
+    de: "Keine Instanz gefunden",
+    ru: "Не найден",
+    pt: "Nenhuma instância encontrada",
+    nl: "Geen instantie gevonden",
+    fr: "Aucune instance trouvée",
+    it: "Nessun caso trovato",
+    es: "No hay caso encontrado",
+    pl: "Brak",
+    uk: "Не знайдено",
+    "zh-cn": "未找到实例",
+};
 
 Blockly.Sendto.blocks["e2-openwebif"] =
     '<block type="e2-openwebif">' +
@@ -315,7 +328,7 @@ Blockly.Blocks["e2-openwebif"] = {
                 }
             }
         }
-
+        if (Object.keys(options_instance).length == 0) options_instance.push([Blockly.Translate("no_instance_found"), ""]);
         this.appendDummyInput("INSTANCE")
             .appendField(Blockly.Translate("e2-openwebif"))
             .appendField(new Blockly.FieldDropdown(options_instance), "INSTANCE");

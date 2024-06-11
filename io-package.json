@@ -45,9 +45,12 @@
         },
         "authors": ["Lucky-ESA <github@luckyskills.de>"],
         "keywords": ["e2", "openwebif", "webif", "enigma2", "remote", "control", "vupuls", "gigablue", "dreambox"],
-        "license": "MIT",
+        "licenseInformation": {
+            "license": "MIT",
+            "type": "free"
+        },
+        "tier": 3,
         "platform": "Javascript/Node.js",
-        "main": "main.js",
         "icon": "e2-openwebif.png",
         "enabled": true,
         "extIcon": "https://raw.githubusercontent.com/Lucky-ESA/ioBroker.e2-openwebif/master/admin/e2-openwebif.png",
