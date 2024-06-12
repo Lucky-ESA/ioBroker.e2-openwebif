@@ -1,3 +1,4 @@
+
 /* eslint-disable no-var */
 /* eslint-disable no-undef */
 // @ts-nocheck
@@ -282,12 +283,9 @@ Blockly.Words["no_instance_found"] = {
 
 Blockly.Sendto.blocks["e2-openwebif"] =
     '<block type="e2-openwebif">' +
-    '     <value name="INSTANCE">' +
-    "     </value>" +
-    '     <value name="DEVICE">' +
-    "     </value>" +
-    '     <value name="MSGTYPE">' +
-    "     </value>" +
+    '     <field name="INSTANCE"></field>' +
+    '     <field name="DEVICE"></field>' +
+    '     <field name="MSGTYPE"></field>' +
     '     <value name="MESSAGE">' +
     '         <shadow type="text">' +
     '             <field name="TEXT">text</field>' +
@@ -298,20 +296,19 @@ Blockly.Sendto.blocks["e2-openwebif"] =
     '             <field name="NUM">10</field>' +
     "         </shadow>" +
     "     </value>" +
-    '     <value name="LOG">' +
-    "     </value>" +
+    '     <field name="LOG"></field>' +
     "</block>";
 
 Blockly.Blocks["e2-openwebif"] = {
     init: function () {
-        var options_device = [];
-        var options_instance = [];
+        const options_device = [];
+        const options_instance = [];
         options_device.push([Blockly.Translate("e2-openwebif_all"), "all"]);
         if (typeof main !== "undefined" && main.instances) {
-            for (var i = 0; i < main.instances.length; i++) {
-                var m = main.instances[i].match(/^system.adapter.e2-openwebif.(\d+)$/);
+            for (let i = 0; i < main.instances.length; i++) {
+                const m = main.instances[i].match(/^system.adapter.e2-openwebif.(\d+)$/);
                 if (m) {
-                    var n = parseInt(m[1], 10);
+                    const n = parseInt(m[1], 10);
                     options_instance.push(["e2-openwebif." + n, "." + n]);
                     if (
                         main.objects &&
@@ -319,16 +316,15 @@ Blockly.Blocks["e2-openwebif"] = {
                         main.objects[main.instances[i]].native &&
                         main.objects[main.instances[i]].native.devices
                     ) {
-                        for (var a = 0; a < main.objects[main.instances[i]].native.devices.length; a++) {
-                            //Checking activ in main.js.
-                            var id = main.objects[main.instances[i]].native.devices[a].ip;
+                        for (let a = 0; a < main.objects[main.instances[i]].native.devices.length; a++) {
+                            const id = main.objects[main.instances[i]].native.devices[a].ip;
                             options_device.push([n + "." + id, id]);
                         }
                     }
                 }
             }
         }
-        if (Object.keys(options_instance).length == 0) options_instance.push([Blockly.Translate("no_instance_found"), ""]);
+        if (options_instance.length == 0) options_instance.push([Blockly.Translate("no_instance_found"), ""]);
         this.appendDummyInput("INSTANCE")
             .appendField(Blockly.Translate("e2-openwebif"))
             .appendField(new Blockly.FieldDropdown(options_instance), "INSTANCE");
@@ -375,14 +371,14 @@ Blockly.Blocks["e2-openwebif"] = {
 };
 
 Blockly.JavaScript["e2-openwebif"] = function (block) {
-    var dropdown_instance = block.getFieldValue("INSTANCE");
-    var logLevel = block.getFieldValue("LOG");
-    var value_device = block.getFieldValue("DEVICE");
-    var value_msgType = block.getFieldValue("MSGTYPE");
-    var value_message = Blockly.JavaScript.valueToCode(block, "MESSAGE", Blockly.JavaScript.ORDER_ATOMIC);
-    var value_timeout = Blockly.JavaScript.valueToCode(block, "TIMEOUT", Blockly.JavaScript.ORDER_ATOMIC);
+    const dropdown_instance = block.getFieldValue("INSTANCE");
+    const logLevel = block.getFieldValue("LOG");
+    const value_device = block.getFieldValue("DEVICE");
+    const value_msgType = block.getFieldValue("MSGTYPE");
+    const value_message = Blockly.JavaScript.valueToCode(block, "MESSAGE", Blockly.JavaScript.ORDER_ATOMIC);
+    const value_timeout = Blockly.JavaScript.valueToCode(block, "TIMEOUT", Blockly.JavaScript.ORDER_ATOMIC);
 
-    var logText;
+    let logText;
     if (logLevel) {
         logText =
             "console." + logLevel + '("e2-openwebif: " + ' + value_message + " + " + value_timeout + " + " + value_device + " + " + value_msgType + ");\n";
