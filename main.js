@@ -116,8 +116,7 @@ class E2Openwebif extends utils.Adapter {
                 const id = element.ip.replace(/[.\s]+/g, "_");
                 this.alexa[id] = null;
                 try {
-                    // @ts-ignore
-                    this.alexa[id] = this.config.alexaToDevice.find((alex) => alex["device"] === element.ip);
+                    this.alexa[id] = this.config.alexaToDevice.find(alex => alex["device"] === element.ip);
                 } catch (e) {
                     this.log_translator("error", "try", `find: ${e}`);
                     this.log_translator("debug", "Error", e, element.ip);
@@ -293,7 +292,7 @@ class E2Openwebif extends utils.Adapter {
         try {
             //config empty and object not exists then delete folder
             const obj = await this.getObjectAsync(`${id}.remote.alexa`);
-            const isfind = this.config.own_alexa.find((ip) => ip["own_device"] === element.ip);
+            const isfind = this.config.own_alexa.find(ip => ip["own_device"] === element.ip);
             if (obj && !isfind) {
                 this.log_translator("debug", "Deleted  folder", `${id}.remote.alexa`);
                 await this.delObjectAsync(`${id}.remote.alexa`, { recursive: true });
@@ -352,7 +351,7 @@ class E2Openwebif extends utils.Adapter {
             if (all_dp != null && all_dp.rows) {
                 for (const dp of all_dp.rows) {
                     const last = dp.id.split(".").pop();
-                    const isOK = this.config.own_alexa.find((ip) => ip["own_datapoint"] === last);
+                    const isOK = this.config.own_alexa.find(ip => ip["own_datapoint"] === last);
                     if (!isOK) {
                         this.log_translator("debug", "last", last);
                         await this.delObjectAsync(`${id}.remote.alexa.${last}`);
@@ -367,6 +366,7 @@ class E2Openwebif extends utils.Adapter {
 
     /**
      * Is called if a subscribed object changes
+     *
      * @param {string} id
      * @param {ioBroker.Object | null | undefined} obj
      */
@@ -374,7 +374,7 @@ class E2Openwebif extends utils.Adapter {
         try {
             if (!stop) {
                 const last = id.split(".").pop();
-                const isOK = this.config.own_alexa.find((ip) => ip["own_datapoint"] === last);
+                const isOK = this.config.own_alexa.find(ip => ip["own_datapoint"] === last);
                 if (obj) {
                     if (
                         isOK &&
@@ -459,11 +459,8 @@ class E2Openwebif extends utils.Adapter {
         }
         this.double_call[obj._id] = true;
         this.log_translator("debug", "Message", JSON.stringify(obj));
-        let adapterconfigs = {};
         let _obj = {};
         try {
-            // @ts-ignore
-            adapterconfigs = this.adapterConfig;
             _obj = JSON.parse(JSON.stringify(obj));
         } catch (error) {
             this.log_translator("error", "try", `onMessage: ${error}`);
@@ -481,8 +478,10 @@ class E2Openwebif extends utils.Adapter {
                         const icons = [];
                         if (_obj && _obj.message && _obj.message.icon && _obj.message.icon.icons) {
                             icon_array = _obj.message.icon.icons;
-                        } else if (adapterconfigs && adapterconfigs.native && adapterconfigs.native.icons) {
-                            icon_array = adapterconfigs.native.icons;
+                        } else {
+                            this.sendTo(obj.from, obj.command, [], obj.callback);
+                            delete this.double_call[obj._id];
+                            break;
                         }
                         if (icon_array && Object.keys(icon_array).length > 0) {
                             for (const icon of icon_array) {
@@ -507,9 +506,10 @@ class E2Openwebif extends utils.Adapter {
                     try {
                         if (_obj && _obj.message && _obj.message.box && _obj.message.box.devices) {
                             device_array = _obj.message.box.devices;
-                        } else if (adapterconfigs && adapterconfigs.native && adapterconfigs.native.devices) {
-                            // @ts-ignore
-                            device_array = adapterconfigs.native.devices;
+                        } else {
+                            this.sendTo(obj.from, obj.command, [], obj.callback);
+                            delete this.double_call[obj._id];
+                            break;
                         }
                         if (device_array && Object.keys(device_array).length > 0) {
                             for (const ip of device_array) {
@@ -899,12 +899,12 @@ class E2Openwebif extends utils.Adapter {
             const minutes = Math.floor((sec - hours * 3600) / 60);
             const seconds = sec - hours * 3600 - minutes * 60;
             if (minutes === 0 && hours === 0) {
-                return ("0" + seconds).slice(-2);
+                return `0${seconds}`.slice(-2);
             }
             if (hours === 0) {
-                return `${("0" + minutes).slice(-2)}:${("0" + seconds).slice(-2)}`;
+                return `${`0${minutes}`.slice(-2)}:${`0${seconds}`.slice(-2)}`;
             }
-            return `${("0" + hours).slice(-2)}:${("0" + minutes).slice(-2)}:${("0" + seconds).slice(-2)}`;
+            return `${`0${hours}`.slice(-2)}:${`0${minutes}`.slice(-2)}:${`0${seconds}`.slice(-2)}`;
         } catch (e) {
             this.log_translator("error", "try", `convertRemaining: ${e}`);
             return "0";
@@ -915,12 +915,12 @@ class E2Openwebif extends utils.Adapter {
         this.log_translator("debug", "Request", path);
         try {
             return this.axiosInstance[id](encodeURI(path))
-                .then((response) => {
+                .then(response => {
                     this.log_translator("debug", "Response", JSON.stringify(response.data));
                     this.isOnline[id] = 1;
                     return response.data;
                 })
-                .catch((error) => {
+                .catch(error => {
                     this.isOnline[id] = 2;
                     this.log_translator("debug", "getRequest", error);
                     error.response && this.log_translator("debug", "getRequest", JSON.stringify(error.response.data));
@@ -935,6 +935,7 @@ class E2Openwebif extends utils.Adapter {
 
     /**
      * Is called when adapter shuts down - callback has to be called under any circumstances!
+     *
      * @param {() => void} callback
      */
     onUnload(callback) {
@@ -971,6 +972,7 @@ class E2Openwebif extends utils.Adapter {
 
     /**
      * Is called if a subscribed state changes
+     *
      * @param {string} id
      * @param {ioBroker.State | null | undefined} state
      */
@@ -1000,7 +1002,9 @@ class E2Openwebif extends utils.Adapter {
                     return;
                 }
                 const secsplit = id.split(".")[id.split(".").length - 2];
-                if (secsplit === "pictures") command = "pictures";
+                if (secsplit === "pictures") {
+                    command = "pictures";
+                }
                 switch (command) {
                     case "REMOTE_CONTROL":
                         if (cs.KEYIDS[state.val] != null && state.val) {
@@ -1195,13 +1199,13 @@ class E2Openwebif extends utils.Adapter {
                     this.log_translator("debug", "Data", JSON.stringify(data));
                 }
                 this.log_translator("debug", "Files", files);
-                files.forEach(async (file) => {
+                files.forEach(async file => {
                     try {
                         if (data && data[`img/${file}`]) {
                             this.log_translator("info", "Found file in iobroker database", file);
                         } else {
                             this.log_translator("info", "database_delete", file);
-                            await this.delFileAsync("e2-openwebif.admin", `img/${file}`, (error) => {
+                            await this.delFileAsync("e2-openwebif.admin", `img/${file}`, error => {
                                 if (!error) {
                                     this.log_translator("info", "File deleted", file);
                                 } else {
@@ -1218,7 +1222,7 @@ class E2Openwebif extends utils.Adapter {
                 this.log_translator("debug", "deletesnapshot obj", JSON.stringify(obj));
                 if (obj && obj.native && obj.native.img && obj.native.img != "") {
                     if (fs.existsSync(admin_path + obj.native.img)) {
-                        await this.delFileAsync("e2-openwebif.admin", obj.native.img, async (error) => {
+                        await this.delFileAsync("e2-openwebif.admin", obj.native.img, async error => {
                             if (!error) {
                                 this.log_translator("info", "File deleted", obj.native.img);
                                 try {
@@ -1268,7 +1272,7 @@ class E2Openwebif extends utils.Adapter {
             }
             this.log_translator("debug", "URL", url);
             const res = await this.axiosSnapshot[deviceId](encodeURI(url))
-                .then((response) => {
+                .then(response => {
                     if (response && response.status === 200) {
                         const writer = fs.createWriteStream("/tmp/image.jpg");
                         response.data.pipe(writer);
@@ -1284,7 +1288,7 @@ class E2Openwebif extends utils.Adapter {
                                     const address = `http://${this.config.your_ip}/e2-openwebif.admin/${picpath}`;
                                     this.log_translator("debug", "picpath", picpath);
                                     this.log_translator("debug", "address", address);
-                                    await this.writeFileAsync("e2-openwebif.admin", picpath, pic, async (error) => {
+                                    await this.writeFileAsync("e2-openwebif.admin", picpath, pic, async error => {
                                         try {
                                             if (!error) {
                                                 this.log_translator("debug", "OK", address);
@@ -1335,13 +1339,13 @@ class E2Openwebif extends utils.Adapter {
                                     reject("Cannot create /tmp/image.jpg");
                                 }
                             });
-                            writer.on("error", (error) => {
+                            writer.on("error", error => {
                                 reject(error);
                             });
                         });
                     }
                 })
-                .catch((e) => {
+                .catch(e => {
                     this.log_translator("error", "try", `axiosSnapshot: ${e}`);
                 });
             this.log_translator("debug", "Response", res);
@@ -1929,11 +1933,11 @@ class E2Openwebif extends utils.Adapter {
             if (!simple_api || !simple_api.native || !simple_api.native.port) {
                 this.log_translator("info", "Cannot found SIMPLE-API", this.config.simple_api);
                 return;
-            } else {
-                if (simple_api.native.port != port) {
-                    port = simple_api.native.port;
-                }
             }
+            if (simple_api.native.port != port) {
+                port = simple_api.native.port;
+            }
+
             if (simple_api.native.auth || simple_api.native.secure) {
                 this.log_translator("info", "Use SIMPLE-API without authorization", this.config.simple_api);
                 return;
@@ -2108,9 +2112,8 @@ class E2Openwebif extends utils.Adapter {
             const res = await ssh2.exec(command);
             if (res == "") {
                 return "OK";
-            } else {
-                return res;
             }
+            return res;
         } catch (e) {
             return e;
         }
@@ -2143,10 +2146,15 @@ class E2Openwebif extends utils.Adapter {
             if (timer && timer.timers != null && Object.keys(timer.timers).length > 0) {
                 for (const element of timer.timers) {
                     if (element && element.state != null) {
-                        if (element.state == 0) ++count_rec_open;
-                        else if (element.state == 1) ++count_rec_err;
-                        else if (element.state == 2) ++count_rec;
-                        else if (element.state == 3) ++count_rec_done;
+                        if (element.state == 0) {
+                            ++count_rec_open;
+                        } else if (element.state == 1) {
+                            ++count_rec_err;
+                        } else if (element.state == 2) {
+                            ++count_rec;
+                        } else if (element.state == 3) {
+                            ++count_rec_done;
+                        }
                     }
                 }
                 const next_timer = timer.timers[0];
@@ -2229,7 +2237,7 @@ class E2Openwebif extends utils.Adapter {
     }
 
     sleep(ms) {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             sleepTimer = this.setTimeout(() => {
                 resolve(true);
             }, ms);
@@ -2287,7 +2295,7 @@ class E2Openwebif extends utils.Adapter {
                             if (states && states.q != null && states.q != 0) {
                                 this.log_translator("debug", "Datapoint", `${dp.id} - ${JSON.stringify(states)}`);
                                 if (quality[states.q]) {
-                                    const isfind = dp_array.find((mes) => mes.message === quality[states.q]);
+                                    const isfind = dp_array.find(mes => mes.message === quality[states.q]);
                                     if (isfind) {
                                         this.log_translator("debug", "Found", JSON.stringify(isfind));
                                         ++isfind.counter;
@@ -2353,7 +2361,7 @@ class E2Openwebif extends utils.Adapter {
                 }
             }
         } catch (e) {
-            this.log.error("try log_translator: " + e);
+            this.log.error(`try log_translator: ${e}`);
         }
     }
 
@@ -2364,14 +2372,12 @@ class E2Openwebif extends utils.Adapter {
                     return format(tl.trans[text][this.lang], merge, merge_1);
                 } else if (merge) {
                     return format(tl.trans[text][this.lang], merge);
-                } else {
-                    return tl.trans[text][this.lang];
                 }
-            } else {
-                return tl.trans["Unknown"][this.lang];
+                return tl.trans[text][this.lang];
             }
+            return tl.trans["Unknown"][this.lang];
         } catch (e) {
-            this.log.error("try helper_translator: " + e);
+            this.log.error(`try helper_translator: ${e}`);
         }
     }
 }
@@ -2380,7 +2386,7 @@ if (require.main !== module) {
     /**
      * @param {Partial<utils.AdapterOptions>} [options={}]
      */
-    module.exports = (options) => new E2Openwebif(options);
+    module.exports = options => new E2Openwebif(options);
 } else {
     // otherwise start the instance directly
     new E2Openwebif();
