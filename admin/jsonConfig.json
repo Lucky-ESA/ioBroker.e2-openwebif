@@ -1,6 +1,9 @@
 {
     "i18n": true,
     "type": "tabs",
+    "tabsStyle": {
+        "width": "calc(100% - 100px)"
+    },
     "items": {
         "tab1": {
             "type": "panel",
@@ -13,7 +16,11 @@
                 },
                 "devices": {
                     "newLine": true,
+                    "xs": 12,
                     "sm": 12,
+                    "md": 12,
+                    "lg": 12,
+                    "xl": 12,
                     "noDelete": false,
                     "type": "table",
                     "items": [
@@ -167,7 +174,11 @@
                 "interval": {
                     "type": "number",
                     "newLine": true,
-                    "sm": 3,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 2,
                     "label": "Interval",
                     "default": 5,
                     "min": 1,
@@ -178,14 +189,22 @@
                     "type": "ip",
                     "newLine": true,
                     "onlyIp4": true,
-                    "sm": 3,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 2,
                     "label": "Your IP",
                     "default": ""
                 },
                 "boottime": {
                     "type": "number",
                     "newLine": true,
-                    "sm": 3,
+                    "xs": 12,
+                    "sm": 12,
+                    "md": 6,
+                    "lg": 6,
+                    "xl": 2,
                     "label": "BOOTTIME",
                     "default": 20,
                     "min": 0,
@@ -196,9 +215,11 @@
                     "newLine": true,
                     "type": "instance",
                     "label": "source",
+                    "xs": 12,
                     "sm": 12,
                     "md": 6,
-                    "lg": 3,
+                    "lg": 6,
+                    "xl": 2,
                     "adapter": "simple-api",
                     "default": ""
                 }
@@ -214,9 +235,11 @@
                     "size": 2
                 },
                 "alexaToDevice": {
+                    "xs": 12,
                     "sm": 12,
                     "md": 12,
                     "lg": 12,
+                    "xl": 12,
                     "noDelete": false,
                     "type": "table",
                     "hidden": "!_alive",
@@ -229,7 +252,6 @@
                             "title": "Activate alexa",
                             "width": "30px",
                             "attr": "alexa",
-                            "allowAddByFilter": false,
                             "filter": true,
                             "sort": true,
                             "default": false,
@@ -558,9 +580,11 @@
                     "size": 2
                 },
                 "own_alexa": {
+                    "xs": 12,
                     "sm": 12,
                     "md": 12,
                     "lg": 12,
+                    "xl": 12,
                     "noDelete": false,
                     "type": "table",
                     "hidden": "!_alive",
@@ -573,7 +597,6 @@
                             "title": "Activ",
                             "width": "10%",
                             "attr": "own_alexa",
-                            "allowAddByFilter": false,
                             "filter": true,
                             "sort": true,
                             "default": false,
@@ -639,9 +662,11 @@
                     "size": 2
                 },
                 "icons": {
+                    "xs": 12,
                     "sm": 12,
                     "md": 12,
                     "lg": 12,
+                    "xl": 12,
                     "noDelete": false,
                     "type": "table",
                     "style": {
@@ -661,8 +686,6 @@
                         {
                             "type": "image",
                             "attr": "picture",
-                            "width": "50%",
-                            "title": "upload",
                             "tooltip": "UPLOAD",
                             "accept": "image/*",
                             "base64": true,
