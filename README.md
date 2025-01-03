@@ -24,20 +24,20 @@ Remote control for your Enigma2 Receivers.
 
 ## Requirements
 
--   Openwebif must be installed
--   Adapter simple-api
--   Hijack and Token must be disabled
+- Openwebif must be installed
+- Adapter simple-api
+- Hijack and Token must be disabled
 
 ## Requirements optionale
 
--   SSH access must be activated
--   SSH User root
--   SSH Password for root user
+- SSH access must be activated
+- SSH User root
+- SSH Password for root user
 
 ## Tested with
 
--   VU Ultimo with OpenATV 7.2
--   GigaBlue UHD Quad 4K with OpenATV 6.4
+- VU Ultimo with OpenATV 7.2
+- GigaBlue UHD Quad 4K with OpenATV 6.4
 
 ## Changelog
 
@@ -48,13 +48,13 @@ Remote control for your Enigma2 Receivers.
 
 ### **WORK IN PROGRESS**
 
--   (Lucky-ESA) initial release
+- (Lucky-ESA) initial release
 
 ## License
 
 MIT License
 
-Copyright (c) 2023 Lucky-ESA <github@luckyskills.de>
+Copyright (c) 2023-2025 Lucky-ESA <github@luckyskills.de>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
