@@ -325,7 +325,7 @@ class E2Openwebif extends utils.Adapter {
                                 role: "button",
                                 name: command["own_name"],
                                 desc: command["own_name"],
-                                read: true,
+                                read: false,
                                 write: true,
                                 def: false,
                                 smartName: command["own_alexa"] ? smartName : false,
