@@ -9,6 +9,7 @@
     "homepage": "https://github.com/Lucky-ESA/ioBroker.e2-openwebif",
     "license": "MIT",
     "keywords": [
+        "ioBroker",
         "e2",
         "openwebif",
         "webif",
