@@ -47,6 +47,7 @@ Remote control for your Enigma2 Receivers.
 -->
 
 ### **WORK IN PROGRESS**
+- (copilot) Adapter requires node.js >= 22 now
 
 - (Lucky-ESA) initial release
 
